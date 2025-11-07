@@ -22,7 +22,7 @@ export default function ResumePreview({ resumeData }: ResumePreviewProps) {
 
           {/* 个人信息 */}
           <div className="personal-info grid grid-cols-2 gap-x-6 gap-y-2">
-            {resumeData.personalInfo.map((item) => (
+            {resumeData.personalInfoSection?.personalInfo.map((item) => (
               <div
                 key={item.id}
                 className="personal-info-item flex items-center gap-2"
@@ -38,12 +38,25 @@ export default function ResumePreview({ resumeData }: ResumePreviewProps) {
                     dangerouslySetInnerHTML={{ __html: item.icon }}
                   />
                 )}
-                <span className="text-sm text-muted-foreground">
-                  {item.label}:
-                </span>
-                <span className="text-sm text-foreground">
-                  {item.value || "未填写"}
-                </span>
+                {resumeData.personalInfoSection?.showPersonalInfoLabels !== false && (
+                  <span className="text-sm text-muted-foreground">
+                    {item.label}:
+                  </span>
+                )}
+                {item.value.type === "link" && item.value.content ? (
+                  <a
+                    href={item.value.content}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {item.value.title || "点击访问"}
+                  </a>
+                ) : (
+                  <span className="text-sm text-foreground">
+                    {item.value.content || "未填写"}
+                  </span>
+                )}
               </div>
             ))}
           </div>

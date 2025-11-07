@@ -67,7 +67,10 @@ export default function ResumeBuilder() {
   const [editorState, setEditorState] = useState<EditorState>({
     resumeData: {
       title: "加载中...",
-      personalInfo: [],
+      personalInfoSection: {
+        personalInfo: [],
+        showPersonalInfoLabels: true,
+      },
       avatar: "",
       modules: [],
       createdAt: new Date().toISOString(),
@@ -122,6 +125,9 @@ export default function ResumeBuilder() {
       },
     }))
   }, [])
+
+  // toggleShowLabels function has been moved to PersonalInfoEditor component
+  // to handle the personalInfoSection showPersonalInfoLabels state locally
 
   const handleSave = () => {
     try {
@@ -223,6 +229,16 @@ export default function ResumeBuilder() {
         <div className="flex items-center gap-2">
           <ViewModeSelector viewMode={viewMode} onViewModeChange={handleViewModeChange} />
 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSave}
+            className="gap-2 bg-transparent"
+          >
+            <Icon icon="mdi:content-save" className="w-4 h-4" />
+            保存
+          </Button>
+
           <Separator orientation="vertical" className="h-6" />
 
           <input type="file" accept=".magicyan" onChange={handleImport} className="hidden" id="import-file" />
@@ -272,9 +288,9 @@ export default function ResumeBuilder() {
 
               {/* 个人信息编辑 */}
               <PersonalInfoEditor
-                personalInfo={editorState.resumeData.personalInfo}
+                personalInfoSection={editorState.resumeData.personalInfoSection}
                 avatar={editorState.resumeData.avatar}
-                onUpdate={(personalInfo, avatar) => updateResumeData({ personalInfo, avatar })}
+                onUpdate={(personalInfoSection, avatar) => updateResumeData({ personalInfoSection, avatar })}
               />
 
               {/* 简历模块编辑 */}

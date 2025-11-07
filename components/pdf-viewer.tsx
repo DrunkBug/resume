@@ -179,15 +179,25 @@ const ResumePDF = ({ resumeData }: { resumeData: ResumeData }) => (
 
           {/* 个人信息 */}
           <View style={styles.personalInfo}>
-            {resumeData.personalInfo.map((item) => (
+            {resumeData.personalInfoSection?.personalInfo.map((item) => (
               <View key={item.id} style={styles.personalInfoItem}>
                 {renderIcon({
                   icon: item.icon,
                   size: 12,
                   style: { marginRight: 5, marginTop: 1 },
                 })}
-                <Text style={styles.label}>{item.label}:</Text>
-                <Text style={styles.value}>{item.value || "未填写"}</Text>
+                {resumeData.personalInfoSection?.showPersonalInfoLabels !== false && (
+                  <Text style={styles.label}>{item.label}:</Text>
+                )}
+                {item.value.type === "link" && item.value.content ? (
+                  <Text style={styles.value}>
+                    {item.value.title || "点击访问"}
+                  </Text>
+                ) : (
+                  <Text style={styles.value}>
+                    {item.value.content || "未填写"}
+                  </Text>
+                )}
               </View>
             ))}
           </View>

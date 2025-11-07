@@ -1,15 +1,37 @@
 /**
+ * 个人信息值的接口
+ */
+export interface PersonalInfoValue {
+  /** 对应的值 */
+  content: string
+  /** 值类型：text（文本）或 link（链接） */
+  type?: "text" | "link"
+  /** 链接类型时的显示标题（仅当type为link时使用） */
+  title?: string
+}
+
+/**
  * 个人信息项的数据结构
  */
 export interface PersonalInfoItem {
   /** 标签名称 */
   label: string
-  /** 对应的值 */
-  value: string
+  /** 值信息 */
+  value: PersonalInfoValue
   /** 图标名称（来自iconify） */
   icon?: string
   /** 唯一标识符 */
   id: string
+}
+
+/**
+ * 个人信息模块的数据结构
+ */
+export interface PersonalInfoSection {
+  /** 个人信息列表 */
+  personalInfo: PersonalInfoItem[]
+  /** 是否显示个人信息标签 */
+  showPersonalInfoLabels?: boolean
 }
 
 /**
@@ -38,8 +60,8 @@ export interface ResumeModule {
 export interface ResumeData {
   /** 简历标题/姓名 */
   title: string
-  /** 个人信息列表 */
-  personalInfo: PersonalInfoItem[]
+  /** 个人信息模块 */
+  personalInfoSection: PersonalInfoSection
   /** 简历模块列表 */
   modules: ResumeModule[]
   /** 头像URL（可选） */

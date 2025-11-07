@@ -23,7 +23,10 @@ export function createNewPersonalInfoItem(): PersonalInfoItem {
   return {
     id: `info-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     label: "新标签",
-    value: "",
+    value: {
+      content: "",
+      type: "text",
+    },
     icon: "mdi:information",
   }
 }
@@ -75,7 +78,7 @@ export function importFromMagicyanFile(fileContent: string): ResumeData {
       throw new Error("简历标题格式错误")
     }
 
-    if (!Array.isArray(data.personalInfo)) {
+    if (!data.personalInfoSection || !Array.isArray(data.personalInfoSection.personalInfo)) {
       throw new Error("个人信息格式错误")
     }
 
@@ -83,8 +86,8 @@ export function importFromMagicyanFile(fileContent: string): ResumeData {
       throw new Error("简历模块格式错误")
     }
 
-    for (const item of data.personalInfo) {
-      if (!item.id || !item.label || typeof item.value !== "string") {
+    for (const item of data.personalInfoSection.personalInfo) {
+      if (!item.id || !item.label || typeof item.value !== "object") {
         throw new Error("个人信息项格式错误")
       }
     }
@@ -98,6 +101,10 @@ export function importFromMagicyanFile(fileContent: string): ResumeData {
     const now = new Date().toISOString()
     return {
       ...data,
+      personalInfoSection: {
+        personalInfo: data.personalInfoSection?.personalInfo || [],
+        showPersonalInfoLabels: data.personalInfoSection?.showPersonalInfoLabels !== undefined ? data.personalInfoSection.showPersonalInfoLabels : true,
+      },
       createdAt: data.createdAt || now,
       updatedAt: now,
     }
@@ -146,10 +153,10 @@ export function validateResumeData(data: ResumeData): { isValid: boolean; errors
     errors.push("简历标题不能为空")
   }
 
-  if (!Array.isArray(data.personalInfo)) {
+  if (!data.personalInfoSection || !Array.isArray(data.personalInfoSection.personalInfo)) {
     errors.push("个人信息格式错误")
   } else {
-    data.personalInfo.forEach((item, index) => {
+    data.personalInfoSection.personalInfo.forEach((item, index) => {
       if (!item.id || !item.label?.trim()) {
         errors.push(`个人信息第${index + 1}项格式错误`)
       }
@@ -164,6 +171,11 @@ export function validateResumeData(data: ResumeData): { isValid: boolean; errors
         errors.push(`简历模块第${index + 1}项格式错误`)
       }
     })
+  }
+
+  // 验证showPersonalInfoLabels属性（可选）
+  if (data.personalInfoSection?.showPersonalInfoLabels !== undefined && typeof data.personalInfoSection.showPersonalInfoLabels !== "boolean") {
+    errors.push("显示个人信息标签设置格式错误")
   }
 
   return {

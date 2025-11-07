@@ -11,27 +11,53 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Icon } from "@iconify/react";
-import type { PersonalInfoItem } from "@/types/resume";
+import type { PersonalInfoItem, PersonalInfoSection } from "@/types/resume";
 import { createNewPersonalInfoItem } from "@/lib/resume-utils";
 import IconPicker from "./icon-picker";
 
 interface PersonalInfoEditorProps {
-  personalInfo: PersonalInfoItem[];
+  personalInfoSection: PersonalInfoSection;
   avatar?: string;
-  onUpdate: (personalInfo: PersonalInfoItem[], avatar?: string) => void;
+  onUpdate: (personalInfoSection: PersonalInfoSection, avatar?: string) => void;
 }
 
 /**
  * 个人信息编辑器组件
  */
 export default function PersonalInfoEditor({
-  personalInfo,
+  personalInfoSection,
   avatar,
   onUpdate,
 }: PersonalInfoEditorProps) {
   const [avatarUrl, setAvatarUrl] = useState(avatar || "");
+  const [showLabels, setShowLabels] = useState(
+    personalInfoSection?.showPersonalInfoLabels !== false
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 提取personalInfo到局部变量以简化代码，如果personalInfoSection不存在则使用空数组
+  const personalInfo = personalInfoSection?.personalInfo || [];
+
+  /**
+   * 切换标签显示
+   */
+  const toggleShowLabels = () => {
+    if (!personalInfoSection) return;
+    const newShowLabels = !showLabels;
+    setShowLabels(newShowLabels);
+    onUpdate({
+      ...personalInfoSection,
+      showPersonalInfoLabels: newShowLabels
+    });
+  };
 
   useEffect(() => {
     if (!avatar) return;
@@ -42,13 +68,17 @@ export default function PersonalInfoEditor({
    * 处理文件上传
    */
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!personalInfoSection) return;
     const file = event.target.files?.[0];
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64 = e.target?.result as string;
         setAvatarUrl(base64);
-        onUpdate(personalInfo, base64);
+        onUpdate({
+          ...personalInfoSection,
+          personalInfo: personalInfo
+        }, base64);
       };
       reader.readAsDataURL(file);
     }
@@ -61,34 +91,47 @@ export default function PersonalInfoEditor({
     id: string,
     updates: Partial<PersonalInfoItem>
   ) => {
+    if (!personalInfoSection) return;
     const updatedInfo = personalInfo.map((item) =>
       item.id === id ? { ...item, ...updates } : item
     );
-    onUpdate(updatedInfo, avatarUrl);
+    onUpdate({
+      ...personalInfoSection,
+      personalInfo: updatedInfo
+    }, avatarUrl);
   };
 
   /**
    * 添加新的个人信息项
    */
   const addPersonalInfoItem = () => {
+    if (!personalInfoSection) return;
     const newItem = createNewPersonalInfoItem();
-    onUpdate([...personalInfo, newItem], avatarUrl);
+    onUpdate({
+      ...personalInfoSection,
+      personalInfo: [...personalInfo, newItem]
+    }, avatarUrl);
   };
 
   /**
    * 删除个人信息项
    */
   const removePersonalInfoItem = (id: string) => {
+    if (!personalInfoSection) return;
     const updatedInfo = personalInfo.filter((item) => item.id !== id);
-    onUpdate(updatedInfo, avatarUrl);
+    onUpdate({
+      ...personalInfoSection,
+      personalInfo: updatedInfo
+    }, avatarUrl);
   };
 
   /**
    * 处理头像URL变化
    */
   const handleAvatarChange = (url: string) => {
+    if (!personalInfoSection) return;
     setAvatarUrl(url);
-    onUpdate(personalInfo, url);
+    onUpdate(personalInfoSection, url);
   };
 
   return (
@@ -98,15 +141,26 @@ export default function PersonalInfoEditor({
           <Icon icon="mdi:account-circle" className="w-5 h-5 text-primary" />
           <h2 className="section-title">个人信息</h2>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={addPersonalInfoItem}
-          className="gap-2 bg-transparent"
-        >
-          <Icon icon="mdi:plus" className="w-4 h-4" />
-          添加信息
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={toggleShowLabels}
+            className="gap-2 bg-transparent"
+          >
+            <Icon icon={showLabels ? "mdi:eye-off" : "mdi:eye"} className="w-4 h-4" />
+            {showLabels ? "隐藏标签" : "显示标签"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={addPersonalInfoItem}
+            className="gap-2 bg-transparent"
+          >
+            <Icon icon="mdi:plus" className="w-4 h-4" />
+            添加信息
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -200,13 +254,14 @@ function PersonalInfoItemEditor({
           <Button
             variant="outline"
             size="sm"
-            className="icon-button bg-transparent"
+            className="icon-button-personal-info bg-transparent w-10 h-12 p-0 flex items-center justify-center"
           >
             {item.icon && (
               <svg
-                width={24}
-                height={24}
+                width={20}
+                height={20}
                 viewBox="0 0 24 24"
+                className="text-muted-foreground"
                 dangerouslySetInnerHTML={{ __html: item.icon }}
               />
             )}
@@ -223,9 +278,10 @@ function PersonalInfoItemEditor({
         </DialogContent>
       </Dialog>
 
-      {/* 标签和值编辑 */}
-      <div className="flex-1 grid grid-cols-2 gap-3">
-        <div>
+      {/* 单行布局：标签 | 类型 | 值输入 | 删除 */}
+      <div className="flex-1 grid grid-cols-12 gap-8">
+        {/* 标签 - 占用2列 */}
+        <div className="col-span-2">
           <Label className="text-xs text-muted-foreground">标签</Label>
           <Input
             value={item.label}
@@ -234,26 +290,72 @@ function PersonalInfoItemEditor({
             className="h-8"
           />
         </div>
-        <div>
-          <Label className="text-xs text-muted-foreground">内容</Label>
-          <Input
-            value={item.value}
-            onChange={(e) => onUpdate({ value: e.target.value })}
-            placeholder="请输入对应内容"
-            className="h-8"
-          />
+
+        {/* 类型选择 - 占用2列 */}
+        <div className="col-span-2">
+          <Label className="text-xs text-muted-foreground">类型</Label>
+          <Select
+            value={item.value.type || "text"}
+            onValueChange={(value: "text" | "link") => onUpdate({ value: { ...item.value, type: value } })}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="text">文本</SelectItem>
+              <SelectItem value="link">链接</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 值输入 - 占用6列，根据类型显示不同的内容 */}
+        <div className="col-span-6">
+          {item.value.type === "link" ? (
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Label className="text-xs text-muted-foreground mb-1 block">链接地址</Label>
+                <Input
+                  value={item.value.content}
+                  onChange={(e) => onUpdate({ value: { ...item.value, content: e.target.value } })}
+                  placeholder="https://..."
+                  className="h-8 w-full"
+                />
+              </div>
+              <div className="flex-1">
+                <Label className="text-xs text-muted-foreground mb-1 block">显示标题</Label>
+                <Input
+                  value={item.value.title || ""}
+                  onChange={(e) => onUpdate({ value: { ...item.value, title: e.target.value } })}
+                  placeholder="如：clickme"
+                  className="h-8 w-full"
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">内容</Label>
+              <Input
+                value={item.value.content}
+                onChange={(e) => onUpdate({ value: { ...item.value, content: e.target.value } })}
+                placeholder="请输入对应内容"
+                className="h-8 w-full"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* 删除按钮 - 占用1列 */}
+        <div className="col-span-1 flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            className="icon-button text-destructive hover:text-destructive"
+          >
+            <Icon icon="mdi:delete" className="w-4 h-4" />
+          </Button>
         </div>
       </div>
-
-      {/* 删除按钮 */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onRemove}
-        className="icon-button text-destructive hover:text-destructive"
-      >
-        <Icon icon="mdi:delete" className="w-4 h-4" />
-      </Button>
     </div>
   );
 }
