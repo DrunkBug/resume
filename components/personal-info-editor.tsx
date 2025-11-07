@@ -41,6 +41,9 @@ export default function PersonalInfoEditor({
   const [showLabels, setShowLabels] = useState(
     personalInfoSection?.showPersonalInfoLabels !== false
   );
+  const [personalInfoInline, setPersonalInfoInline] = useState(
+    personalInfoSection?.personalInfoInline === true
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 提取personalInfo到局部变量以简化代码，如果personalInfoSection不存在则使用空数组
@@ -59,10 +62,31 @@ export default function PersonalInfoEditor({
     });
   };
 
+  /**
+   * 切换单行显示
+   */
+  const togglePersonalInfoInline = () => {
+    if (!personalInfoSection) return;
+    const newPersonalInfoInline = !personalInfoInline;
+    setPersonalInfoInline(newPersonalInfoInline);
+    onUpdate({
+      ...personalInfoSection,
+      personalInfoInline: newPersonalInfoInline
+    });
+  };
+
   useEffect(() => {
     if (!avatar) return;
     setAvatarUrl(avatar);
   }, [avatar]);
+
+  useEffect(() => {
+    // 同步 personalInfoSection 的变化，更新本地状态
+    if (personalInfoSection) {
+      setShowLabels(personalInfoSection?.showPersonalInfoLabels !== false);
+      setPersonalInfoInline(personalInfoSection?.personalInfoInline === true);
+    }
+  }, [personalInfoSection?.showPersonalInfoLabels, personalInfoSection?.personalInfoInline]);
 
   /**
    * 处理文件上传
@@ -142,6 +166,15 @@ export default function PersonalInfoEditor({
           <h2 className="section-title">个人信息</h2>
         </div>
         <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={togglePersonalInfoInline}
+            className="gap-2 bg-transparent"
+          >
+            <Icon icon={personalInfoInline ? "mdi:view-sequential" : "mdi:view-column"} className="w-4 h-4" />
+            {personalInfoInline ? "多行显示" : "单行显示"}
+          </Button>
           <Button
             size="sm"
             variant="outline"

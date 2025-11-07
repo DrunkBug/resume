@@ -69,6 +69,7 @@ export default function ResumeBuilder() {
       personalInfoSection: {
         personalInfo: [],
         showPersonalInfoLabels: true,
+        personalInfoInline: false,
       },
       avatar: "",
       modules: [],
@@ -124,9 +125,6 @@ export default function ResumeBuilder() {
       },
     }))
   }, [])
-
-  // toggleShowLabels function has been moved to PersonalInfoEditor component
-  // to handle the personalInfoSection showPersonalInfoLabels state locally
 
   const handleSave = () => {
     try {

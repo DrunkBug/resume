@@ -21,45 +21,89 @@ export default function ResumePreview({ resumeData }: ResumePreviewProps) {
           </h1>
 
           {/* 个人信息 */}
-          <div className="personal-info grid grid-cols-2 gap-x-6 gap-y-2">
-            {resumeData.personalInfoSection?.personalInfo.map((item) => (
-              <div
-                key={item.id}
-                className="personal-info-item flex items-center gap-2"
-              >
-                {item.icon && (
-                  <svg
-                    className="resume-icon w-4 h-4
-                     flex-shrink-0 transform -translate-y-[-1px]"
-                    fill="black"
-                    width={16}
-                    height={16}
-                    viewBox="0 0 24 24"
-                    dangerouslySetInnerHTML={{ __html: item.icon }}
-                  />
-                )}
-                {resumeData.personalInfoSection?.showPersonalInfoLabels !== false && (
-                  <span className="text-sm text-muted-foreground">
-                    {item.label}:
-                  </span>
-                )}
-                {item.value.type === "link" && item.value.content ? (
-                  <a
-                    href={item.value.content}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    {item.value.title || "点击访问"}
-                  </a>
-                ) : (
-                  <span className="text-sm text-foreground">
-                    {item.value.content || "未填写"}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+          {resumeData.personalInfoSection?.personalInfoInline ? (
+            /* 单行显示模式 */
+            <div className="personal-info flex flex-wrap items-center gap-x-4 gap-y-2">
+              {resumeData.personalInfoSection?.personalInfo.map((item, index) => (
+                <div
+                  key={item.id}
+                  className="personal-info-item flex items-center gap-1"
+                >
+                  {index > 0 && <span className="text-muted-foreground"></span>}
+                  {item.icon && (
+                    <svg
+                      className="resume-icon w-4 h-4 flex-shrink-0 transform -translate-y-[-1px]"
+                      fill="black"
+                      width={16}
+                      height={16}
+                      viewBox="0 0 24 24"
+                      dangerouslySetInnerHTML={{ __html: item.icon }}
+                    />
+                  )}
+                  {resumeData.personalInfoSection?.showPersonalInfoLabels !== false && (
+                    <span className="text-sm text-muted-foreground">
+                      {item.label}:
+                    </span>
+                  )}
+                  {item.value.type === "link" && item.value.content ? (
+                    <a
+                      href={item.value.content}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      {item.value.title || "点击访问"}
+                    </a>
+                  ) : (
+                    <span className="text-sm text-foreground">
+                      {item.value.content || "未填写"}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* 多行显示模式（原有的网格布局） */
+            <div className="personal-info grid grid-cols-2 gap-x-6 gap-y-2">
+              {resumeData.personalInfoSection?.personalInfo.map((item) => (
+                <div
+                  key={item.id}
+                  className="personal-info-item flex items-center gap-2"
+                >
+                  {item.icon && (
+                    <svg
+                      className="resume-icon w-4 h-4
+                       flex-shrink-0 transform -translate-y-[-1px]"
+                      fill="black"
+                      width={16}
+                      height={16}
+                      viewBox="0 0 24 24"
+                      dangerouslySetInnerHTML={{ __html: item.icon }}
+                    />
+                  )}
+                  {resumeData.personalInfoSection?.showPersonalInfoLabels !== false && (
+                    <span className="text-sm text-muted-foreground">
+                      {item.label}:
+                    </span>
+                  )}
+                  {item.value.type === "link" && item.value.content ? (
+                    <a
+                      href={item.value.content}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      {item.value.title || "点击访问"}
+                    </a>
+                  ) : (
+                    <span className="text-sm text-foreground">
+                      {item.value.content || "未填写"}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 头像 */}

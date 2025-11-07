@@ -104,6 +104,7 @@ export function importFromMagicyanFile(fileContent: string): ResumeData {
       personalInfoSection: {
         personalInfo: data.personalInfoSection?.personalInfo || [],
         showPersonalInfoLabels: data.personalInfoSection?.showPersonalInfoLabels !== undefined ? data.personalInfoSection.showPersonalInfoLabels : true,
+        personalInfoInline: data.personalInfoSection?.personalInfoInline !== undefined ? data.personalInfoSection.personalInfoInline : false,
       },
       createdAt: data.createdAt || now,
       updatedAt: now,
@@ -173,9 +174,14 @@ export function validateResumeData(data: ResumeData): { isValid: boolean; errors
     })
   }
 
-  // 验证showPersonalInfoLabels属性（可选）
+  // 验证showPersonalInfoLabels属性
   if (data.personalInfoSection?.showPersonalInfoLabels !== undefined && typeof data.personalInfoSection.showPersonalInfoLabels !== "boolean") {
     errors.push("显示个人信息标签设置格式错误")
+  }
+
+  // 验证personalInfoInline属性
+  if (data.personalInfoSection?.personalInfoInline !== undefined && typeof data.personalInfoSection.personalInfoInline !== "boolean") {
+    errors.push("个人信息内联设置格式错误")
   }
 
   return {

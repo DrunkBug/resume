@@ -32,6 +32,8 @@ export interface PersonalInfoSection {
   personalInfo: PersonalInfoItem[]
   /** 是否显示个人信息标签 */
   showPersonalInfoLabels?: boolean
+  /** 是否单行显示个人信息 */
+  personalInfoInline?: boolean
 }
 
 /**

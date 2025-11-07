@@ -90,6 +90,21 @@ const styles = StyleSheet.create({
     width: "50%",
     marginBottom: 5,
   },
+  personalInfoInline: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  personalInfoInlineItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 15,
+    marginBottom: 3,
+  },
+  personalInfoSeparator: {
+    marginRight: 8,
+    color: "#999",
+  },
   label: {
     fontSize: 10,
     color: "#666",
@@ -168,85 +183,102 @@ const renderIcon = ({ icon, size, style }: IconType) => {
   }
   return null;
 };
-// 简历PDF文档组件
-const ResumePDF = ({ resumeData }: { resumeData: ResumeData }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      {/* 头部信息 */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>{resumeData.title || "简历标题"}</Text>
 
-          {/* 个人信息 */}
-          <View style={styles.personalInfo}>
-            {resumeData.personalInfoSection?.personalInfo.map((item) => (
-              <View key={item.id} style={styles.personalInfoItem}>
-                {renderIcon({
-                  icon: item.icon,
-                  size: 12,
-                  style: { marginRight: 5, marginTop: 1 },
-                })}
-                {resumeData.personalInfoSection?.showPersonalInfoLabels !== false && (
-                  <Text style={styles.label}>{item.label}:</Text>
-                )}
-                {item.value.type === "link" && item.value.content ? (
-                  <Text style={styles.value}>
-                    {item.value.title || "点击访问"}
-                  </Text>
-                ) : (
-                  <Text style={styles.value}>
-                    {item.value.content || "未填写"}
-                  </Text>
-                )}
-              </View>
-            ))}
+// 渲染个人信息项
+const renderPersonalInfoItem = (item: any, showLabels: boolean, isInline: boolean) => (
+  <View key={item.id} style={isInline ? styles.personalInfoInlineItem : styles.personalInfoItem}>
+    {renderIcon({
+      icon: item.icon,
+      size: 12,
+      style: { marginRight: 5, marginTop: 1 },
+    })}
+    {showLabels && <Text style={styles.label}>{item.label}:</Text>}
+    {item.value.type === "link" && item.value.content ? (
+      <Text style={styles.value}>{item.value.title || "点击访问"}</Text>
+    ) : (
+      <Text style={styles.value}>{item.value.content || "未填写"}</Text>
+    )}
+  </View>
+);
+
+// 简历PDF文档组件
+const ResumePDF = ({ resumeData }: { resumeData: ResumeData }) => {
+  const isInline = resumeData.personalInfoSection?.personalInfoInline === true;
+  const showLabels = resumeData.personalInfoSection?.showPersonalInfoLabels !== false;
+  const personalInfoItems = resumeData.personalInfoSection?.personalInfo || [];
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* 头部信息 */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>{resumeData.title || "简历标题"}</Text>
+
+            {/* 个人信息 */}
+            <View style={isInline ? styles.personalInfoInline : styles.personalInfo}>
+              {isInline ? (
+                // 单行显示模式
+                personalInfoItems.map((item, index) => (
+                  <View key={item.id} style={{ flexDirection: "row", alignItems: "center" }}>
+                    {renderPersonalInfoItem(item, showLabels, true)}
+                    {index < personalInfoItems.length - 1 && (
+                      <Text style={styles.personalInfoSeparator}></Text>
+                    )}
+                  </View>
+                ))
+              ) : (
+                // 多行显示模式
+                personalInfoItems.map((item) => renderPersonalInfoItem(item, showLabels, false))
+              )}
+            </View>
           </View>
+
+          {/* 头像 */}
+          {resumeData.avatar && (
+            <Image src={resumeData.avatar} style={styles.avatar} />
+          )}
         </View>
 
-        {/* 头像 */}
-        {resumeData.avatar && (
-          <Image src={resumeData.avatar} style={styles.avatar} />
+        {/* 简历模块 */}
+        {resumeData.modules
+          .sort((a, b) => a.order - b.order)
+          .map((module) => (
+            <View key={module.id} style={styles.moduleContainer}>
+              <View style={styles.moduleTitleContainer}>
+                {renderIcon({ icon: module.icon, size: 16 })}
+                <Text style={styles.moduleTitle}>{module.title}</Text>
+              </View>
+
+              <View>
+                {/* 副标题和时间 */}
+                {(module.subtitle || module.timeRange) && (
+                  <View style={styles.moduleHeader}>
+                    {module.subtitle && (
+                      <Text style={styles.subtitle}>{module.subtitle}</Text>
+                    )}
+                    {module.timeRange && (
+                      <Text style={styles.timeRange}>{module.timeRange}</Text>
+                    )}
+                  </View>
+                )}
+
+                {/* 内容 */}
+                {module.content && (
+                  <Text style={styles.content}>{module.content}</Text>
+                )}
+              </View>
+            </View>
+          ))}
+
+        {/* 空状态提示 */}
+        {resumeData.modules.length === 0 && (
+          <Text style={styles.placeholder}>暂无简历内容</Text>
         )}
-      </View>
-
-      {/* 简历模块 */}
-      {resumeData.modules
-        .sort((a, b) => a.order - b.order)
-        .map((module) => (
-          <View key={module.id} style={styles.moduleContainer}>
-            <View style={styles.moduleTitleContainer}>
-              {renderIcon({ icon: module.icon, size: 16 })}
-              <Text style={styles.moduleTitle}>{module.title}</Text>
-            </View>
-
-            <View>
-              {/* 副标题和时间 */}
-              {(module.subtitle || module.timeRange) && (
-                <View style={styles.moduleHeader}>
-                  {module.subtitle && (
-                    <Text style={styles.subtitle}>{module.subtitle}</Text>
-                  )}
-                  {module.timeRange && (
-                    <Text style={styles.timeRange}>{module.timeRange}</Text>
-                  )}
-                </View>
-              )}
-
-              {/* 内容 */}
-              {module.content && (
-                <Text style={styles.content}>{module.content}</Text>
-              )}
-            </View>
-          </View>
-        ))}
-
-      {/* 空状态提示 */}
-      {resumeData.modules.length === 0 && (
-        <Text style={styles.placeholder}>暂无简历内容</Text>
-      )}
-    </Page>
-  </Document>
-);
+      </Page>
+    </Document>
+  );
+};
 
 // PDF预览组件
 export const PDFViewer = ({ resumeData }: { resumeData: ResumeData }) => (
