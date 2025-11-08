@@ -63,7 +63,7 @@ pnpm build
 │   ├── resume-utils.ts     # 简历相关工具函数
 │   └── utils.ts            # 通用工具函数
 ├── public/                 # 静态资源
-│   ├── demo.magicyan       # 示例简历数据
+│   ├── demo.magic       # 示例简历数据
 │   └── ...
 ├── styles/                 # 样式文件
 │   ├── globals.css         # 全局样式
@@ -74,7 +74,7 @@ pnpm build
 
 ## 简历数据格式
 
-简历数据使用`.magicyan`格式保存，这是一个基于JSON的自定义格式。数据结构如下：
+简历数据使用`.magic`格式保存，这是一个基于JSON的自定义格式。数据结构如下：
 
 ```typescript
 interface MagicyanFile {
@@ -112,7 +112,7 @@ interface ResumeData {
 
 ### 数据导入导出
 
-支持将简历数据导出为`.magicyan`文件，也可以从文件导入数据（json格式）。
+支持将简历数据导出为`.magic`文件，也可以从文件导入数据（json格式）。
 
 ## 自定义主题
 

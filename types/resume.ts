@@ -79,24 +79,72 @@ export interface JobIntentionSection {
   enabled: boolean
 }
 
-/**
- * 简历模块的数据结构
- */
+// 文本样式定义
+export interface TextStyle {
+  /** 字体 */
+  fontFamily?: string
+  /** 字号（pt） */
+  fontSize?: number
+  /** 字体颜色 */
+  color?: string
+  /** 加粗 */
+  bold?: boolean
+  /** 斜体 */
+  italic?: boolean
+  /** 行内代码样式 */
+  code?: boolean
+}
+
+// 文本片段 - 富文本的最小单元
+export interface TextSegment {
+  /** 唯一标识符 */
+  id: string
+  /** 文本内容 */
+  text: string
+  /** 样式 */
+  style: TextStyle
+}
+
+// 内容元素 - 一行中的一列
+export interface ModuleContentElement {
+  /** 唯一标识符 */
+  id: string
+  /** 元素类型 */
+  type: 'text' | 'bullet-list' | 'numbered-list'
+  /** 富文本内容（由多个片段组成） */
+  segments: TextSegment[]
+  /** 该元素在行中的位置索引（0-3） */
+  columnIndex: number
+  /** 对齐方式（应用于整个元素） */
+  align?: 'left' | 'center' | 'right' | 'justify'
+  /** 如果是列表类型，缩进级别（0-3） */
+  indent?: number
+}
+
+// 内容行 - 一行可以包含1-4列
+export interface ModuleContentRow {
+  /** 唯一标识符 */
+  id: string
+  /** 该行的列数（1-4） */
+  columns: 1 | 2 | 3 | 4
+  /** 该行包含的元素（数组长度 = columns） */
+  elements: ModuleContentElement[]
+  /** 行顺序 */
+  order: number
+}
+
+// 简历模块
 export interface ResumeModule {
   /** 唯一标识符 */
   id: string
-  /** 大标题 */
+  /** 模块标题 */
   title: string
-  /** 副标题（可选） */
-  subtitle?: string
-  /** 时间范围（可选） */
-  timeRange?: string
-  /** 内容描述 */
-  content: string
-  /** 图标名称（可选） */
+  /** 模块图标（SVG字符串） */
   icon?: string
   /** 模块顺序 */
   order: number
+  /** 模块内容（由多行组成） */
+  rows: ModuleContentRow[]
 }
 
 /**

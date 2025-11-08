@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Icon } from "@iconify/react"
 import type { ResumeData, EditorState } from "@/types/resume"
 import { exportToMagicyanFile, downloadFile, importFromMagicyanFile } from "@/lib/resume-utils"
+import { migrateModules, isLegacyModule } from "@/lib/migrate-resume-data"
 import ResumePreview from "./resume-preview"
 import PersonalInfoEditor from "./personal-info-editor"
 import JobIntentionEditor from "./job-intention-editor"
@@ -70,7 +71,10 @@ export default function ResumeBuilder() {
       personalInfoSection: {
         personalInfo: [],
         showPersonalInfoLabels: true,
-        personalInfoInline: false,
+        layout: {
+          mode: 'grid',
+          itemsPerRow: 2,
+        },
       },
       avatar: "",
       modules: [],
@@ -88,12 +92,20 @@ export default function ResumeBuilder() {
   useEffect(() => {
     const loadDemoData = async () => {
       try {
-        const response = await fetch("/demo.magicyan")
+        const response = await fetch("/demo.magic")
         if (!response.ok) {
           throw new Error("Failed to load demo data")
         }
         const content = await response.text()
-        const demoData = importFromMagicyanFile(content)
+        let demoData = importFromMagicyanFile(content)
+
+        // 检查并迁移旧数据
+        if (demoData.modules.some(isLegacyModule)) {
+          demoData = {
+            ...demoData,
+            modules: migrateModules(demoData.modules),
+          }
+        }
 
         setEditorState((prev) => ({
           ...prev,
@@ -130,7 +142,7 @@ export default function ResumeBuilder() {
   const handleSave = () => {
     try {
       const fileContent = exportToMagicyanFile(editorState.resumeData)
-      const filename = `${editorState.resumeData.title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "_")}.magicyan`
+      const filename = `${editorState.resumeData.title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "_")}.magic`
       downloadFile(fileContent, filename)
 
       toast({
@@ -151,10 +163,10 @@ export default function ResumeBuilder() {
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (!file.name.endsWith(".magicyan")) {
+    if (!file.name.endsWith(".magic")) {
       toast({
         title: "文件格式错误",
-        description: "请选择 .magicyan 格式的文件",
+        description: "请选择 .magic 格式的文件",
         variant: "destructive",
       })
       event.target.value = ""
@@ -175,7 +187,20 @@ export default function ResumeBuilder() {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string
-        const importedData = importFromMagicyanFile(content)
+        let importedData = importFromMagicyanFile(content)
+
+        // 检查并迁移旧数据
+        if (importedData.modules.some(isLegacyModule)) {
+          importedData = {
+            ...importedData,
+            modules: migrateModules(importedData.modules),
+          }
+
+          toast({
+            title: "数据已自动升级",
+            description: "检测到旧版本数据，已自动转换为新格式",
+          })
+        }
 
         setEditorState((prev) => ({
           ...prev,
@@ -229,7 +254,7 @@ export default function ResumeBuilder() {
 
           <Separator orientation="vertical" className="h-6" />
 
-          <input type="file" accept=".magicyan" onChange={handleImport} className="hidden" id="import-file" />
+          <input type="file" accept=".magic" onChange={handleImport} className="hidden" id="import-file" />
           <Button
             variant="outline"
             size="sm"

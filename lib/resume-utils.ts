@@ -8,11 +8,9 @@ export function createNewModule(order: number): ResumeModule {
   return {
     id: `module-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     title: "新模块",
-    subtitle: "",
-    timeRange: "",
-    content: "",
-    icon: "mdi:text-box",
+    icon: undefined,
     order,
+    rows: [],
   }
 }
 
@@ -55,7 +53,7 @@ export function createNewJobIntentionItem(type: 'workYears' | 'position' | 'city
 }
 
 /**
- * 导出简历数据为.magicyan文件
+ * 导出简历数据为.magic文件
  */
 export function exportToMagicyanFile(resumeData: ResumeData): string {
   const magicyanFile: MagicyanFile = {
@@ -74,7 +72,7 @@ export function exportToMagicyanFile(resumeData: ResumeData): string {
 }
 
 /**
- * 从.magicyan文件内容导入简历数据
+ * 从.magic文件内容导入简历数据
  */
 export function importFromMagicyanFile(fileContent: string): ResumeData {
   try {

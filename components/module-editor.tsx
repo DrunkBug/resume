@@ -3,14 +3,22 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Icon } from "@iconify/react"
-import type { ResumeModule } from "@/types/resume"
-import { createNewModule } from "@/lib/resume-utils"
+import type { ResumeModule, ModuleContentRow, ModuleContentElement } from "@/types/resume"
 import IconPicker from "./icon-picker"
+import FloatingActionBar from "./floating-action-bar"
+import RichTextInput from "./rich-text-input"
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
 
 interface ModuleEditorProps {
@@ -19,8 +27,44 @@ interface ModuleEditorProps {
 }
 
 /**
- * 简历模块编辑器组件
+ * 生成唯一ID
  */
+const generateId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+/**
+ * 创建新模块
+ */
+const createNewModule = (order: number): ResumeModule => ({
+  id: generateId(),
+  title: "新模块",
+  icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/></svg>',
+  order,
+  rows: [],
+})
+
+/**
+ * 创建新行
+ */
+const createNewRow = (columns: 1 | 2 | 3 | 4, order: number): ModuleContentRow => {
+  const elements: ModuleContentElement[] = []
+  for (let i = 0; i < columns; i++) {
+    elements.push({
+      id: generateId(),
+      type: 'text',
+      segments: [{ id: generateId(), text: '', style: {} }],
+      columnIndex: i,
+      align: 'left',
+    })
+  }
+
+  return {
+    id: generateId(),
+    columns,
+    elements,
+    order,
+  }
+}
+
 export default function ModuleEditor({ modules, onUpdate }: ModuleEditorProps) {
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set())
 
@@ -31,7 +75,6 @@ export default function ModuleEditor({ modules, onUpdate }: ModuleEditorProps) {
     const newModule = createNewModule(modules.length)
     const updatedModules = [...modules, newModule]
     onUpdate(updatedModules)
-    // 自动展开新添加的模块
     setExpandedModules((prev) => new Set([...prev, newModule.id]))
   }
 
@@ -39,7 +82,9 @@ export default function ModuleEditor({ modules, onUpdate }: ModuleEditorProps) {
    * 更新模块
    */
   const updateModule = (id: string, updates: Partial<ResumeModule>) => {
-    const updatedModules = modules.map((module) => (module.id === id ? { ...module, ...updates } : module))
+    const updatedModules = modules.map((module) =>
+      module.id === id ? { ...module, ...updates } : module
+    )
     onUpdate(updatedModules)
   }
 
@@ -57,27 +102,20 @@ export default function ModuleEditor({ modules, onUpdate }: ModuleEditorProps) {
   }
 
   /**
-   * 处理拖拽结束事件
+   * 处理模块拖拽
    */
-  const handleDragEnd = (result: DropResult) => {
-    // 如果没有目标或者拖拽到了列表外，则不做任何操作
+  const handleModuleDragEnd = (result: DropResult) => {
     if (!result.destination) return
-    
-    const { source, destination } = result
-    
-    // 如果源位置和目标位置相同，则不做任何操作
-    if (source.index === destination.index) return
-    
-    // 重新排序模块
+    if (result.source.index === result.destination.index) return
+
     const updatedModules = [...modules]
-    const [movedModule] = updatedModules.splice(source.index, 1)
-    updatedModules.splice(destination.index, 0, movedModule)
-    
-    // 重新设置order
+    const [movedModule] = updatedModules.splice(result.source.index, 1)
+    updatedModules.splice(result.destination.index, 0, movedModule)
+
     updatedModules.forEach((module, index) => {
       module.order = index
     })
-    
+
     onUpdate(updatedModules)
   }
 
@@ -109,43 +147,37 @@ export default function ModuleEditor({ modules, onUpdate }: ModuleEditorProps) {
         </Button>
       </div>
 
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="modules-list" isDropDisabled={false}>
+      <DragDropContext onDragEnd={handleModuleDragEnd}>
+        <Droppable droppableId="modules-list">
           {(provided) => (
-            <div 
-              className="space-y-3" 
-              {...provided.droppableProps} 
-              ref={provided.innerRef}
-            >
+            <div className="space-y-3" {...provided.droppableProps} ref={provided.innerRef}>
               {modules
                 .sort((a, b) => a.order - b.order)
                 .map((module, index) => (
                   <Draggable key={module.id} draggableId={module.id} index={index}>
                     {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          style={{
-                            ...provided.draggableProps.style,
-                            opacity: snapshot.isDragging ? 0.8 : 1
-                          }}
-                        >
-                          <ModuleItemEditor
-                            module={module}
-                            isExpanded={expandedModules.has(module.id)}
-                            isFirst={index === 0}
-                            isLast={index === modules.length - 1}
-                            onToggle={() => toggleModule(module.id)}
-                            onUpdate={(updates) => updateModule(module.id, updates)}
-                            onRemove={() => removeModule(module.id)}
-                          />
-                        </div>
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        style={{
+                          ...provided.draggableProps.style,
+                          opacity: snapshot.isDragging ? 0.8 : 1,
+                        }}
+                      >
+                        <ModuleItem
+                          module={module}
+                          isExpanded={expandedModules.has(module.id)}
+                          dragHandleProps={provided.dragHandleProps}
+                          onToggle={() => toggleModule(module.id)}
+                          onUpdate={(updates) => updateModule(module.id, updates)}
+                          onRemove={() => removeModule(module.id)}
+                        />
+                      </div>
                     )}
                   </Draggable>
                 ))}
               {provided.placeholder}
-              
+
               {modules.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Icon icon="mdi:view-module-outline" className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -161,74 +193,115 @@ export default function ModuleEditor({ modules, onUpdate }: ModuleEditorProps) {
 }
 
 /**
- * 模块项编辑器
+ * 单个模块组件
  */
-interface ModuleItemEditorProps {
+interface ModuleItemProps {
   module: ResumeModule
   isExpanded: boolean
-  isFirst: boolean
-  isLast: boolean
+  dragHandleProps: any
   onToggle: () => void
   onUpdate: (updates: Partial<ResumeModule>) => void
   onRemove: () => void
 }
 
-function ModuleItemEditor({
+function ModuleItem({
   module,
   isExpanded,
-  isFirst,
-  isLast,
+  dragHandleProps,
   onToggle,
   onUpdate,
   onRemove,
-}: ModuleItemEditorProps) {
+}: ModuleItemProps) {
+
+  /**
+   * 添加新行
+   */
+  const addRow = (columns: 1 | 2 | 3 | 4) => {
+    const newRow = createNewRow(columns, module.rows.length)
+    onUpdate({ rows: [...module.rows, newRow] })
+  }
+
+  /**
+   * 更新行
+   */
+  const updateRow = (rowId: string, updates: Partial<ModuleContentRow>) => {
+    const updatedRows = module.rows.map((row) =>
+      row.id === rowId ? { ...row, ...updates } : row
+    )
+    onUpdate({ rows: updatedRows })
+  }
+
+  /**
+   * 删除行
+   */
+  const removeRow = (rowId: string) => {
+    const updatedRows = module.rows.filter((row) => row.id !== rowId)
+    onUpdate({ rows: updatedRows })
+  }
+
+  /**
+   * 更新元素
+   */
+  const updateElement = (rowId: string, elementId: string, updates: Partial<ModuleContentElement>) => {
+    const updatedRows = module.rows.map((row) => {
+      if (row.id === rowId) {
+        const updatedElements = row.elements.map((el) =>
+          el.id === elementId ? { ...el, ...updates } : el
+        )
+        return { ...row, elements: updatedElements }
+      }
+      return row
+    })
+    onUpdate({ rows: updatedRows })
+  }
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
   return (
-    <Collapsible open={isExpanded} onOpenChange={onToggle}>
+    <>
       <div className="border rounded-lg bg-muted/30">
         {/* 模块头部 */}
-        <CollapsibleTrigger asChild>
-          <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors">
-            <div className="flex items-center gap-3">
-              <Icon 
-                icon="mdi:drag" 
-                className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing"
-              />
-              {module.icon ? (
-                <svg width={16} height={16} viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: module.icon }} />
-              ) : (
-                <div className="w-4 h-4 border border-dashed border-gray-400 rounded-sm" />
-              )}
-              <span className="font-medium">{module.title || "未命名模块"}</span>
-              {module.subtitle && <span className="text-sm text-muted-foreground">- {module.subtitle}</span>}
-            </div>
-            <div className="flex items-center gap-1">
+        <div
+          className="relative p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={onToggle}
+        >
+          <div className="flex items-center gap-3">
+            {module.icon ? (
+              <svg width={16} height={16} viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: module.icon }} />
+            ) : (
+              <div className="w-4 h-4 border border-dashed border-gray-400 rounded-sm" />
+            )}
+            <span className="font-medium">{module.title || "未命名模块"}</span>
+            <Icon
+              icon={isExpanded ? "mdi:chevron-up" : "mdi:chevron-down"}
+              className="w-4 h-4 text-muted-foreground ml-auto"
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowDeleteConfirm(true)
+              }}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Icon icon="mdi:delete" className="w-4 h-4" />
+            </Button>
+            <div {...dragHandleProps} onClick={(e) => e.stopPropagation()}>
               <Icon
-                icon={isExpanded ? "mdi:chevron-up" : "mdi:chevron-down"}
-                className="w-4 h-4 text-muted-foreground"
+                icon="mdi:drag"
+                className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing"
               />
             </div>
           </div>
-        </CollapsibleTrigger>
+        </div>
 
-        {/* 模块内容编辑 */}
-        <CollapsibleContent>
+        {/* 模块内容 */}
+        {isExpanded && (
           <div className="p-3 pt-0 space-y-4 border-t">
-            {/* 工具栏 */}
-            <div className="flex items-center justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onRemove}
-                className="icon-button text-destructive hover:text-destructive"
-              >
-                <Icon icon="mdi:delete" className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* 基本信息编辑 */}
+            {/* 模块设置 */}
             <div className="grid grid-cols-2 gap-3">
               <div className="form-group">
-                <Label className="form-label">大标题</Label>
                 <Input
                   value={module.title}
                   onChange={(e) => onUpdate({ title: e.target.value })}
@@ -236,16 +309,13 @@ function ModuleItemEditor({
                 />
               </div>
               <div className="form-group">
-                <Label className="form-label">图标</Label>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
                       {module.icon ? (
                         <svg width={16} height={16} viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: module.icon }} />
                       ) : (
-                        <div className="w-4 h-4 border border-dashed border-gray-400 rounded-sm flex items-center justify-center">
-                          <span className="text-[8px] text-gray-400">无</span>
-                        </div>
+                        <div className="w-4 h-4 border border-dashed border-gray-400 rounded-sm" />
                       )}
                       选择图标
                     </Button>
@@ -260,38 +330,157 @@ function ModuleItemEditor({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="form-group">
-                <Label className="form-label">副标题</Label>
-                <Input
-                  value={module.subtitle || ""}
-                  onChange={(e) => onUpdate({ subtitle: e.target.value })}
-                  placeholder="如：公司名称、学校名称（可选）"
-                />
-              </div>
-              <div className="form-group">
-                <Label className="form-label">时间范围</Label>
-                <Input
-                  value={module.timeRange || ""}
-                  onChange={(e) => onUpdate({ timeRange: e.target.value })}
-                  placeholder="如：2020.01 - 2023.12（可选）"
-                />
-              </div>
-            </div>
+            {/* 内容行列表 */}
+            <div className="space-y-0.5">
+              {module.rows
+                .sort((a, b) => a.order - b.order)
+                .map((row) => (
+                  <ContentRowEditor
+                    key={row.id}
+                    row={row}
+                    onUpdate={(updates) => updateRow(row.id, updates)}
+                    onRemove={() => removeRow(row.id)}
+                    onUpdateElement={(elementId, updates) => updateElement(row.id, elementId, updates)}
+                    onAddRow={addRow}
+                  />
+                ))}
 
-            <div className="form-group">
-              <Label className="form-label">详细内容</Label>
-              <Textarea
-                value={module.content}
-                onChange={(e) => onUpdate({ content: e.target.value })}
-                placeholder="请输入详细描述内容，支持多行文本"
-                rows={4}
-                className="resize-none"
-              />
+              {module.rows.length === 0 && (
+                <EmptyRowPlaceholder onAddRow={addRow} />
+              )}
             </div>
           </div>
-        </CollapsibleContent>
+        )}
       </div>
-    </Collapsible>
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              您确定要删除模块"{module.title}"及其所有内容吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onRemove()
+                setShowDeleteConfirm(false)
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
+/**
+ * 内容行编辑器
+ */
+interface ContentRowEditorProps {
+  row: ModuleContentRow
+  onUpdate: (updates: Partial<ModuleContentRow>) => void
+  onRemove: () => void
+  onUpdateElement: (elementId: string, updates: Partial<ModuleContentElement>) => void
+  onAddRow: (columns: 1 | 2 | 3 | 4) => void
+}
+
+/**
+ * 空行占位符组件
+ */
+interface EmptyRowPlaceholderProps {
+  onAddRow: (columns: 1 | 2 | 3 | 4) => void
+}
+
+function EmptyRowPlaceholder({ onAddRow }: EmptyRowPlaceholderProps) {
+  const [hoveredEmpty, setHoveredEmpty] = useState(false)
+
+  return (
+    <div
+      className="relative pb-8"
+      onMouseEnter={() => setHoveredEmpty(true)}
+      onMouseLeave={() => setHoveredEmpty(false)}
+    >
+      <div className="text-center py-6 text-muted-foreground border-2 border-dashed rounded-lg relative">
+        <p className="text-sm">暂无内容，悬浮到此处添加行</p>
+
+        {hoveredEmpty && (
+          <FloatingActionBar onAddRow={onAddRow} onDelete={() => { }} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ContentRowEditor({ row, onUpdate, onRemove, onUpdateElement, onAddRow }: ContentRowEditorProps) {
+  const [hoveredRow, setHoveredRow] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  const handleDelete = () => {
+    onRemove()
+    setShowDeleteConfirm(false)
+  }
+
+  return (
+    <>
+      <div
+        className="relative pb-8"
+        onMouseEnter={() => setHoveredRow(true)}
+        onMouseLeave={() => setHoveredRow(false)}
+      >
+        <div className="border rounded-lg bg-white relative">
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `repeat(${row.columns}, 1fr)`,
+            }}
+          >
+            {row.elements.map((element, index) => (
+              <div
+                key={element.id}
+                className={index < row.elements.length - 1 ? "border-r" : ""}
+              >
+                <RichTextInput
+                  element={element}
+                  onChange={(updates) => onUpdateElement(element.id, updates)}
+                  placeholder="输入内容..."
+                />
+              </div>
+            ))}
+          </div>
+
+          {hoveredRow && (
+            <FloatingActionBar onAddRow={onAddRow} onDelete={() => setShowDeleteConfirm(true)} />
+          )}
+        </div>
+      </div>
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              您确定要删除这一行吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
