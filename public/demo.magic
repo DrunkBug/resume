@@ -55,22 +55,12 @@
           },
           "icon": "<path fill=\"currentColor\" d=\"M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2\"/>",
           "order": 4
-        },
-        {
-          "id": "info-1762523579667-4ekx514vl",
-          "label": "地址",
-          "value": {
-            "content": "北京",
-            "type": "text"
-          },
-          "icon": "<path fill=\"currentColor\" d=\"M12 11.5A2.5 2.5 0 0 1 9.5 9A2.5 2.5 0 0 1 12 6.5A2.5 2.5 0 0 1 14.5 9a2.5 2.5 0 0 1-2.5 2.5M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7\"/>",
-          "order": 5
         }
       ],
       "showPersonalInfoLabels": false,
       "layout": {
         "mode": "grid",
-        "itemsPerRow": 6
+        "itemsPerRow": 5
       }
     },
     "jobIntentionSection": {
@@ -90,11 +80,11 @@
           "type": "position"
         },
         {
-          "id": "jii-3",
-          "label": "目标城市",
+          "id": "jii-1762631891551-2mixnm8hc",
+          "label": "期望城市",
           "value": "北京",
           "order": 2,
-          "type": "city"
+          "type": "custom"
         }
       ],
       "enabled": true
@@ -103,62 +93,431 @@
       {
         "id": "education-1",
         "title": "教育背景",
-        "subtitle": "四川商务职业学院",
-        "timeRange": "2020.09.01 ~ 2023.06.30",
-        "content": "",
         "icon": "<path fill=\"currentColor\" d=\"M12 3L1 9l11 6l9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17z\"/>",
-        "order": 1
+        "order": 1,
+        "rows": [
+          {
+            "id": "id-1762631629762-wc8sjzakp",
+            "columns": 3,
+            "elements": [
+              {
+                "id": "id-1762631629762-pkpjr7d74",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-z84tt78ed",
+                    "text": "四川商务职业学院",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 0,
+                "align": "left"
+              },
+              {
+                "id": "id-1762631629762-ogsyo9aqx",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-8u3zo9gjc",
+                    "text": "",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 1,
+                "align": "center"
+              },
+              {
+                "id": "id-1762631629762-mutwsl1be",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-zi4mr2p77",
+                    "text": "2020.09.01 ~ 2023.06.30",
+                    "style": {
+                      "color": "#0066cc"
+                    }
+                  }
+                ],
+                "columnIndex": 2,
+                "align": "right"
+              }
+            ],
+            "order": 0
+          }
+        ]
       },
       {
         "id": "introduction-1",
         "title": "自我介绍",
-        "content": "（抱拳沉声）我乃大专巅峰，二转前端蛊师，修前端之道已二年半。以视觉为蛊引，代码为杀招，炼组件如炼丹，布状态似结阵。\n（袖中飞出三道流光）吾掌三大仙蛊：一曰样式蛊，可化万般界面皮相；二曰状态蛊，能驭千重数据变化；三曰动效蛊，可令像素生灵起舞。\n（展开蛊阵图卷）这些时日，斩过混沌需求妖兽，解过浏览器蛊毒，更在用户心海种下交互动效之蛊。凡所见之处，必以像素级精度炼之，以视觉驱动叩问前端大道。\n（负手而立）代码如蛊，一念生万象。诸君且看——我这二年半修为，可能入得各位道友法眼？",
         "icon": "<path fill=\"currentColor\" d=\"M6.25 7a5.75 5.75 0 1 1 11.5 0a5.75 5.75 0 0 1-11.5 0m5.548 7.261a1 1 0 0 1 .13-.011h.144q.066 0 .13.011l7.295 1.283l.038.008c1.344.31 2.788 1.163 3.069 2.82l.004.029l.114.877v.002c.264 2.009-1.329 3.47-3.21 3.47a1 1 0 0 1-.124-.01h-14.9c-1.881 0-3.475-1.462-3.21-3.472l.114-.869l.005-.03c.28-1.627 1.736-2.528 3.077-2.819l.029-.006z\"/>",
         "order": 2,
-        "timeRange": ""
+        "rows": [
+          {
+            "id": "id-1762631629762-vwt8gl5cz",
+            "columns": 1,
+            "elements": [
+              {
+                "id": "id-1762631629762-1vdyioev9",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "seg-before-1762631672004-0",
+                    "text": "（",
+                    "style": {}
+                  },
+                  {
+                    "id": "seg-selected-1762631672004-0",
+                    "text": "抱拳沉声",
+                    "style": {
+                      "color": "#f9c513"
+                    }
+                  },
+                  {
+                    "id": "seg-after-1762631672004-0",
+                    "text": "）",
+                    "style": {}
+                  },
+                  {
+                    "id": "seg-selected-1762631643365-0",
+                    "text": "我乃大专巅峰",
+                    "style": {
+                      "color": "#d73a49"
+                    }
+                  },
+                  {
+                    "id": "seg-before-1762631650041-12",
+                    "text": "，二转前端蛊师，修前端之道已二年半。",
+                    "style": {}
+                  },
+                  {
+                    "id": "seg-selected-1762631650041-12",
+                    "text": "以视觉为蛊引",
+                    "style": {
+                      "color": "#ea4aaa"
+                    }
+                  },
+                  {
+                    "id": "seg-before-1762631656527-36",
+                    "text": "，代码为杀招，",
+                    "style": {}
+                  },
+                  {
+                    "id": "seg-selected-1762631656527-36",
+                    "text": "炼组",
+                    "style": {
+                      "color": "#28a745"
+                    }
+                  },
+                  {
+                    "id": "seg-before-1762631664897-45",
+                    "text": "件如炼丹，",
+                    "style": {}
+                  },
+                  {
+                    "id": "seg-selected-1762631664897-45",
+                    "text": "布状态似结",
+                    "style": {
+                      "color": "#e36209"
+                    }
+                  },
+                  {
+                    "id": "seg-selected-1762631687918-55",
+                    "text": "阵",
+                    "style": {
+                      "fontSize": 14
+                    }
+                  },
+                  {
+                    "id": "seg-after-1762631687918-55",
+                    "text": "。",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 0,
+                "align": "left"
+              }
+            ],
+            "order": 0
+          },
+          {
+            "id": "id-1762631629762-2v4nrxlmh",
+            "columns": 1,
+            "elements": [
+              {
+                "id": "id-1762631629762-xmxhu5ibj",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-vhd4mvhr6",
+                    "text": "（袖中飞出三道流光）吾掌三大仙蛊：一曰样式蛊，可化万般界面皮相；二曰状态蛊，能驭千重数据变化；三曰动效蛊，可令像素生灵起舞。",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 0,
+                "align": "left"
+              }
+            ],
+            "order": 1
+          },
+          {
+            "id": "id-1762631629762-wo8hzx2k3",
+            "columns": 1,
+            "elements": [
+              {
+                "id": "id-1762631629762-3z9hs4him",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-pzgibolyc",
+                    "text": "（展开蛊阵图卷）这些时日，斩过混沌需求妖兽，解过浏览器蛊毒，更在用户心海种下交互动效之蛊。凡所见之处，必以像素级精度炼之，以视觉驱动叩问前端大道。",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 0,
+                "align": "left"
+              }
+            ],
+            "order": 2
+          },
+          {
+            "id": "id-1762631629762-b8amsahkf",
+            "columns": 1,
+            "elements": [
+              {
+                "id": "id-1762631629762-uraxa95ej",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-i5uyb0fiu",
+                    "text": "（负手而立）代码如蛊，一念生万象。诸君且看——我这二年半修为，可能入得各位道友法眼？",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 0,
+                "align": "left"
+              }
+            ],
+            "order": 3
+          }
+        ]
       },
       {
         "id": "work-1",
         "title": "工作经历",
-        "subtitle": "甲子洞天科技 | 前端蛊师",
-        "timeRange": "（壬寅年冬 - 今）",
-        "content": "镇守宗门核心产品「天机商城蛊阵」，执掌React+TypeScript丹炉。独炼「设计系统蛊池」，饲喂三百余组件供全宗弟子取用，令开发效率暴涨如潮。每逢大版本更新，吾以「可视化拖拽蛊器」降伏产品心魔，需求迭代速提五成",
         "icon": "<path fill=\"currentColor\" d=\"M10 2h4a2 2 0 0 1 2 2v2h4a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8c0-1.11.89-2 2-2h4V4c0-1.11.89-2 2-2m4 4V4h-4v2z\"/>",
-        "order": 3
-      },
-      {
-        "id": "work-2",
-        "title": "",
-        "subtitle": "万虫谷网络 | 初阶蛊修",
-        "timeRange": "（庚子年春 - 壬寅年秋）",
-        "content": "于遗老项目「混沌ERP蛊窟」中初试锋芒。以Redux蛊阵降伏四处奔流的状态妖兽，更以Webpack化蛊术重炼构建经脉，令冷启动速度由十息缩至三息。期间驯服WebGL蛊虫，炼就3D仓储可视化大阵，得长老赐「破局新锐」蛊号。",
-        "icon": "",
-        "order": 4
+        "order": 3,
+        "rows": [
+          {
+            "id": "id-1762631629762-axkv3ej1r",
+            "columns": 3,
+            "elements": [
+              {
+                "id": "id-1762631629762-wumzbrnnr",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-o9nrnuifu",
+                    "text": "甲子洞天科技 | 前端蛊师",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 0,
+                "align": "left"
+              },
+              {
+                "id": "id-1762631629762-m3df6rgzi",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-fyoyampdf",
+                    "text": "",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 1,
+                "align": "center"
+              },
+              {
+                "id": "id-1762631629762-fedk8ysp4",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-tdot7pwt3",
+                    "text": "（壬寅年冬 - 今）",
+                    "style": {
+                      "color": "#0066cc"
+                    }
+                  }
+                ],
+                "columnIndex": 2,
+                "align": "right"
+              }
+            ],
+            "order": 0
+          },
+          {
+            "id": "id-1762631629762-gh3p2nj06",
+            "columns": 1,
+            "elements": [
+              {
+                "id": "id-1762631629762-k1z2jn5nw",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-f8doipkah",
+                    "text": "镇守宗门核心产品「天机商城蛊阵」，执掌React+TypeScript丹炉。独炼「设计系统蛊池」，饲喂三百余组件供全宗弟子取用，令开发效率暴涨如潮。每逢大版本更新，吾以「可视化拖拽蛊器」降伏产品心魔，需求迭代速提五成",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 0,
+                "align": "left"
+              }
+            ],
+            "order": 1
+          }
+        ]
       },
       {
         "id": "project-1",
         "title": "项目经验",
-        "subtitle": "天机商城蛊阵",
-        "timeRange": "主炼蛊师",
-        "content": "炼就「微前端子蛊巢」，贯通五大道统（React/Vue/原生），令三千页面如臂使指。独创「性能监测蛊虫」，实时吐纳首屏加载、交互反馈等十二项指标，核心转化率提升廿五。今此蛊阵日活百万，稳如磐石。",
         "icon": "<path fill=\"currentColor\" d=\"M22 4h-8l-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2M2 6H0v14a2 2 0 0 0 2 2h18v-2H2z\"/>",
-        "order": 6
-      },
-      {
-        "id": "project-3",
-        "title": "",
-        "subtitle": "移动端秘术阁APP",
-        "timeRange": "独修者",
-        "content": "以React Native为本命蛊，炼就跨平台双生之术。施「手势动效符咒」解「iOS/Android道统之争」，用户触感如抚真蛊。发布七日即登灵 store榜单前百，留存率超同业三成。",
-        "icon": "",
-        "order": 8
+        "order": 6,
+        "rows": [
+          {
+            "id": "id-1762631629762-2jzetrg5d",
+            "columns": 3,
+            "elements": [
+              {
+                "id": "id-1762631629762-prfwkw3es",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-xnislsypn",
+                    "text": "天机商城蛊阵",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 0,
+                "align": "left"
+              },
+              {
+                "id": "id-1762631629762-re5sf4gx4",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-hhs2mpvdg",
+                    "text": "",
+                    "style": {}
+                  }
+                ],
+                "columnIndex": 1,
+                "align": "center"
+              },
+              {
+                "id": "id-1762631629762-nepxnbier",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "id-1762631629762-fqw66py1e",
+                    "text": "主炼蛊师",
+                    "style": {
+                      "color": "#0066cc"
+                    }
+                  }
+                ],
+                "columnIndex": 2,
+                "align": "right"
+              }
+            ],
+            "order": 0
+          },
+          {
+            "id": "id-1762631629762-ooslc0jvu",
+            "columns": 1,
+            "elements": [
+              {
+                "id": "id-1762631629762-pcbqxin06",
+                "type": "text",
+                "segments": [
+                  {
+                    "id": "seg-before-1762631734543-0",
+                    "text": "炼就「微前端子蛊巢」，",
+                    "style": {
+                      "color": "#d73a49"
+                    }
+                  },
+                  {
+                    "id": "seg-selected-1762631734543-0",
+                    "text": "贯通五大道统",
+                    "style": {
+                      "color": "#11C439"
+                    }
+                  },
+                  {
+                    "id": "seg-before-1762631751666-17",
+                    "text": "（React/Vue/原生），令三千页面如臂使指。独创「",
+                    "style": {
+                      "color": "#d73a49"
+                    }
+                  },
+                  {
+                    "id": "seg-selected-1762631751666-17",
+                    "text": "性能监测蛊虫",
+                    "style": {
+                      "color": "#E5CE72"
+                    }
+                  },
+                  {
+                    "id": "seg-after-1762631751666-17",
+                    "text": "」，实时吐纳首屏加载、",
+                    "style": {
+                      "color": "#d73a49"
+                    }
+                  },
+                  {
+                    "id": "seg-selected-1762631708920-0",
+                    "text": "交互反馈等十二项指标",
+                    "style": {
+                      "color": "#0366d6"
+                    }
+                  },
+                  {
+                    "id": "seg-before-1762631719937-72",
+                    "text": "，核心转化率提升廿五。",
+                    "style": {
+                      "color": "#d73a49"
+                    }
+                  },
+                  {
+                    "id": "seg-selected-1762631719937-72",
+                    "text": "今此蛊阵日活百万",
+                    "style": {
+                      "color": "#6f42c1"
+                    }
+                  },
+                  {
+                    "id": "seg-after-1762631719937-72",
+                    "text": "，稳如磐石。",
+                    "style": {
+                      "color": "#d73a49"
+                    }
+                  }
+                ],
+                "columnIndex": 0,
+                "align": "left"
+              }
+            ],
+            "order": 1
+          }
+        ]
       }
     ],
     "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2025-11-08T03:25:02.623Z"
+    "updatedAt": "2025-11-08T19:58:56.262Z",
+    "avatar": ""
   },
   "metadata": {
-    "exportedAt": "2025-11-08T03:25:02.623Z",
+    "exportedAt": "2025-11-08T19:58:56.262Z",
     "appVersion": "1.0.0"
   }
 }

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { Toaster } from "@/components/toaster";
+import { ColorPickerProvider } from "@/components/color-picker-manager";
 import localFont from "next/font/local";
 
 // 定义 NotoSansSC 字体
@@ -37,8 +38,10 @@ html {
         <link rel="stylesheet" href="/styles/print-resume.css" media="print" />
       </head>
       <body className={notoSansSC.className}>
-        {children}
-        <Toaster />
+        <ColorPickerProvider>
+          {children}
+          <Toaster />
+        </ColorPickerProvider>
       </body>
     </html>
   );

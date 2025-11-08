@@ -1,11 +1,11 @@
 "use client"
-import { useState } from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Icon } from "@iconify/react"
-import ColorPicker from "@/components/color-picker"
 import type { TextStyle } from "@/types/resume"
+import { useColorPicker } from "@/components/color-picker-manager"
 
 // 支持的字体列表
 const FONT_FAMILIES = [
@@ -39,6 +39,8 @@ const PRESET_COLORS = [
   '#0366d6', '#6f42c1', '#ea4aaa', '#ffffff',
 ]
 
+
+
 interface RichTextToolbarProps {
   currentStyle: Partial<TextStyle>
   onApplyStyle: (key: keyof TextStyle, value: any) => void
@@ -48,7 +50,7 @@ interface RichTextToolbarProps {
   currentListType?: 'bullet-list' | 'numbered-list' | null
 }
 
-export default function RichTextToolbar({
+const RichTextToolbar = React.memo(function RichTextToolbar({
   currentStyle,
   onApplyStyle,
   onAlignChange,
@@ -57,8 +59,7 @@ export default function RichTextToolbar({
   currentListType = null,
 }: RichTextToolbarProps) {
   const [colorPickerOpen, setColorPickerOpen] = useState(false)
-  const [showCustomPicker, setShowCustomPicker] = useState(false)
-  const toolbarRef = useState<HTMLDivElement | null>(null)[0]
+  const { openColorPicker } = useColorPicker()
 
   return (
     <div className="relative bg-white text-slate-800 rounded shadow-lg p-1.5 space-y-1 min-w-[300px] text-xs border border-slate-200">
@@ -209,19 +210,13 @@ export default function RichTextToolbar({
         )}
 
         {/* 文字颜色 */}
-        <Popover
-          open={colorPickerOpen}
-          onOpenChange={() => {
-            // 完全忽略自动关闭请求，只通过按钮手动控制
-          }}
-        >
+        <Popover open={colorPickerOpen} onOpenChange={setColorPickerOpen}>
           <PopoverTrigger asChild>
             <Button
               size="sm"
               variant="ghost"
               className="h-6 w-6 p-0 hover:bg-slate-100 relative"
               title="文字颜色"
-              onClick={() => setColorPickerOpen(!colorPickerOpen)}
             >
               <Icon icon="mdi:format-color-text" className="w-3 h-3" />
               <div
@@ -230,70 +225,45 @@ export default function RichTextToolbar({
               />
             </Button>
           </PopoverTrigger>
-          <PopoverContent
-            className="w-auto p-2 bg-white"
-            align="end"
-            side="bottom"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-            onCloseAutoFocus={(e) => e.preventDefault()}
-            onEscapeKeyDown={(e) => e.preventDefault()}
-            onPointerDownOutside={(e) => e.preventDefault()}
-            onFocusOutside={(e) => e.preventDefault()}
-            onInteractOutside={(e) => e.preventDefault()}
-          >
-            {!showCustomPicker ? (
-              // 预设颜色选择器
-              <div className="grid grid-cols-4 gap-1">
-                {PRESET_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    className="w-6 h-6 rounded border border-gray-300 hover:border-blue-500 transition-colors"
-                    style={{ backgroundColor: color }}
-                    onClick={() => {
-                      onApplyStyle('color', color)
-                      setColorPickerOpen(false)
-                    }}
-                    title={color}
-                  />
-                ))}
-                {/* 自定义颜色按钮 */}
+          <PopoverContent className="w-auto p-2 bg-white" align="end" side="bottom">
+            <div className="grid grid-cols-4 gap-1">
+              {PRESET_COLORS.map((color) => (
                 <button
-                  className="w-6 h-6 rounded border border-gray-300 hover:border-blue-500 transition-colors cursor-pointer flex items-center justify-center bg-white"
-                  title="自定义颜色"
-                  onClick={() => setShowCustomPicker(true)}
-                >
-                  <Icon icon="mdi:palette" className="w-4 h-4 text-slate-600" />
-                </button>
-              </div>
-            ) : null}
+                  key={color}
+                  className="w-6 h-6 rounded border border-gray-300 hover:border-blue-500 transition-colors"
+                  style={{ backgroundColor: color }}
+                  onClick={() => {
+                    onApplyStyle('color', color)
+                    setColorPickerOpen(false)
+                  }}
+                  title={color}
+                />
+              ))}
+              {/* 自定义颜色按钮 */}
+              <button
+                className="w-6 h-6 rounded border border-gray-300 hover:border-blue-500 transition-colors cursor-pointer flex items-center justify-center bg-white"
+                title="自定义颜色"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setColorPickerOpen(false)
+                  setTimeout(() => {
+                    openColorPicker(currentStyle.color || '#000000', (color) => {
+                      onApplyStyle('color', color)
+                    })
+                  }, 100)
+                }}
+              >
+                <Icon icon="mdi:palette" className="w-4 h-4 text-slate-600" />
+              </button>
+            </div>
           </PopoverContent>
         </Popover>
-      </div>
 
-      {/* 独立的自定义颜色选择器 */}
-      {showCustomPicker && (
-        <>
-          {/* 背景遮罩 */}
-          <div
-            className="fixed inset-0 bg-black/50 z-[9998]"
-            onClick={() => setShowCustomPicker(false)}
-          />
-          {/* 颜色选择器 - 定位在工具栏右侧 */}
-          <div className="absolute top-0 left-full ml-2 z-[9999]">
-            <ColorPicker
-              initialColor={currentStyle.color || '#000000'}
-              onSave={(color) => {
-                onApplyStyle('color', color)
-                setShowCustomPicker(false)
-                setColorPickerOpen(false)
-              }}
-              onCancel={() => {
-                setShowCustomPicker(false)
-              }}
-            />
-          </div>
-        </>
-      )}
+
+      </div>
     </div>
   )
-}
+})
+
+export default RichTextToolbar

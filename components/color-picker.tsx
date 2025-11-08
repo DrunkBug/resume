@@ -22,6 +22,17 @@ export default function ColorPicker({ initialColor, onSave, onCancel }: ColorPic
   const [isDraggingSaturation, setIsDraggingSaturation] = useState(false)
   const [isDraggingHue, setIsDraggingHue] = useState(false)
 
+  // 使用 ref 存储最新的 hue, saturation, brightness 值
+  const hueRef2 = useRef(hue)
+  const saturationRef2 = useRef(saturation)
+  const brightnessRef2 = useRef(brightness)
+
+  useEffect(() => {
+    hueRef2.current = hue
+    saturationRef2.current = saturation
+    brightnessRef2.current = brightness
+  }, [hue, saturation, brightness])
+
   // 初始化颜色
   useEffect(() => {
     const color = initialColor.replace('#', '')
@@ -135,8 +146,10 @@ export default function ColorPicker({ initialColor, onSave, onCancel }: ColorPic
 
   // 处理饱和度/亮度面板点击
   function handleSaturationMouseDown(e: React.MouseEvent) {
-    setIsDraggingSaturation(true)
+    e.stopPropagation()
+    e.preventDefault()
     updateSaturationFromMouse(e)
+    setIsDraggingSaturation(true)
   }
 
   function updateSaturationFromMouse(e: React.MouseEvent | MouseEvent) {
@@ -148,11 +161,12 @@ export default function ColorPicker({ initialColor, onSave, onCancel }: ColorPic
     const newSat = (x / rect.width) * 100
     const newBright = 100 - (y / rect.height) * 100
 
-    updateColor(hue, newSat, newBright)
+    updateColor(hueRef2.current, newSat, newBright)
   }
 
   // 处理色相滑块点击
   function handleHueMouseDown(e: React.MouseEvent) {
+    e.stopPropagation()
     setIsDraggingHue(true)
     updateHueFromMouse(e)
   }
@@ -163,7 +177,7 @@ export default function ColorPicker({ initialColor, onSave, onCancel }: ColorPic
     const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height))
     const newHue = (y / rect.height) * 360
 
-    updateColor(newHue, saturation, brightness)
+    updateColor(newHue, saturationRef2.current, brightnessRef2.current)
   }
 
   // 鼠标移动和释放事件
@@ -190,13 +204,15 @@ export default function ColorPicker({ initialColor, onSave, onCancel }: ColorPic
         document.removeEventListener('mouseup', handleMouseUp)
       }
     }
-  }, [isDraggingSaturation, isDraggingHue, hue, saturation, brightness])
+    // 移除 hue, saturation, brightness 依赖，避免在拖拽时重新创建监听器
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDraggingSaturation, isDraggingHue])
 
   const currentColor = `#${hex}`
   const hueColor = `hsl(${hue}, 100%, 50%)`
 
   return (
-    <div className="bg-white p-3 rounded-lg shadow-lg w-[280px]" onClick={(e) => e.stopPropagation()}>
+    <div className="bg-white p-3 rounded-lg w-[280px]">
       <div className="flex gap-2">
         {/* 左侧：饱和度/亮度选择器 */}
         <div
