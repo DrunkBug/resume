@@ -13,6 +13,7 @@ import {
   Font,
   Svg,
   Path,
+  Link,
 } from "@react-pdf/renderer";
 import type { ResumeData } from "@/types/resume";
 
@@ -141,6 +142,11 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 10,
   },
+  link: {
+    fontSize: 10,
+    color: "#2563eb",
+    textDecoration: "underline",
+  },
   avatar: {
     width: 60,
     height: 60,
@@ -229,7 +235,9 @@ const renderPersonalInfoItem = (item: any, showLabels: boolean, isInline: boolea
       })}
       {showLabels && <Text style={styles.label}>{item.label}:</Text>}
       {item.value.type === "link" && item.value.content ? (
-        <Text style={styles.value}>{item.value.title || "点击访问"}</Text>
+        <Link src={item.value.content} style={styles.link}>
+          {item.value.title || "点击访问"}
+        </Link>
       ) : (
         <Text style={styles.value}>{item.value.content || "未填写"}</Text>
       )}
@@ -249,7 +257,9 @@ const renderRichText = (content: any): React.ReactNode => {
         fontSize: 10,
       };
 
-      // 处理marks（粗体、斜体、下划线、颜色等）
+      let linkHref: string | null = null;
+
+      // 处理marks（粗体、斜体、下划线、颜色、链接等）
       if (node.marks && Array.isArray(node.marks)) {
         node.marks.forEach((mark: any) => {
           switch (mark.type) {
@@ -264,6 +274,11 @@ const renderRichText = (content: any): React.ReactNode => {
               break;
             case 'strike':
               textStyles.textDecoration = 'line-through';
+              break;
+            case 'link':
+              linkHref = mark.attrs?.href;
+              textStyles.color = '#2563eb';
+              textStyles.textDecoration = 'underline';
               break;
             case 'textStyle':
               // 处理颜色
@@ -282,6 +297,15 @@ const renderRichText = (content: any): React.ReactNode => {
               break;
           }
         });
+      }
+
+      // 如果是链接，使用 Link 组件
+      if (linkHref) {
+        return (
+          <Link key={index} src={linkHref} style={textStyles}>
+            {node.text}
+          </Link>
+        );
       }
 
       return (

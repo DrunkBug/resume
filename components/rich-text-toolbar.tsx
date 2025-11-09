@@ -1,6 +1,7 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Icon } from "@iconify/react"
@@ -45,6 +46,8 @@ interface RichTextToolbarProps {
 
 export default function RichTextToolbar({ editor }: RichTextToolbarProps) {
   const [colorPickerOpen, setColorPickerOpen] = useState(false)
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
   const { openColorPicker } = useColorPicker()
   const savedSelectionRef = useRef<{ from: number; to: number } | null>(null)
 
@@ -222,6 +225,105 @@ export default function RichTextToolbar({ editor }: RichTextToolbarProps) {
         >
           <Icon icon="mdi:code-tags" className="w-3 h-3" />
         </Button>
+
+        {/* Link */}
+        <Popover open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              size="sm"
+              variant={editor.isActive('link') ? "default" : "ghost"}
+              className={`h-6 w-6 p-0 ${editor.isActive('link') ? "bg-slate-300" : "hover:bg-slate-100"}`}
+              onPointerDown={(e) => {
+                e.preventDefault()
+                const { from, to } = editor.state.selection
+                savedSelectionRef.current = { from, to }
+              }}
+              onClick={() => {
+                if (editor.isActive('link')) {
+                  editor.chain().focus().unsetLink().run()
+                } else {
+                  const currentUrl = editor.getAttributes('link').href || 'https://'
+                  setLinkUrl(currentUrl)
+                  setLinkDialogOpen(true)
+                }
+              }}
+              title="插入链接 (Ctrl+K)"
+            >
+              <Icon icon="mdi:link-variant" className="w-3 h-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-80 p-3 bg-white"
+            align="start"
+            side="bottom"
+            onOpenAutoFocus={(e) => {
+              e.preventDefault()
+            }}
+          >
+            <div className="space-y-3">
+              <div className="text-sm font-medium text-slate-700">插入链接</div>
+              <div className="space-y-2">
+                <label className="text-xs text-slate-600">链接地址:</label>
+                <Input
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  placeholder="https://"
+                  className="h-8 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (linkUrl && savedSelectionRef.current) {
+                        const { from, to } = savedSelectionRef.current
+                        editor.chain()
+                          .focus()
+                          .setTextSelection({ from, to })
+                          .setLink({ href: linkUrl })
+                          .run()
+                      }
+                      setLinkDialogOpen(false)
+                      setLinkUrl('')
+                    } else if (e.key === 'Escape') {
+                      setLinkDialogOpen(false)
+                      setLinkUrl('')
+                    }
+                  }}
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setLinkDialogOpen(false)
+                    setLinkUrl('')
+                  }}
+                  className="h-7 text-xs"
+                >
+                  取消
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (linkUrl && savedSelectionRef.current) {
+                      const { from, to } = savedSelectionRef.current
+                      editor.chain()
+                        .focus()
+                        .setTextSelection({ from, to })
+                        .setLink({ href: linkUrl })
+                        .run()
+                    }
+                    setLinkDialogOpen(false)
+                    setLinkUrl('')
+                  }}
+                  className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
+                >
+                  确定
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         <div className="w-px h-4 bg-slate-300 mx-0.5" />
 

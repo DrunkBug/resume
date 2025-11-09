@@ -68,6 +68,9 @@ importers:
       '@tiptap/extension-font-family':
         specifier: ^3.10.4
         version: 3.10.4(@tiptap/extension-text-style@3.10.4(@tiptap/core@3.10.4(@tiptap/pm@3.10.4)))
+      '@tiptap/extension-link':
+        specifier: ^3.10.4
+        version: 3.10.4(@tiptap/core@3.10.4(@tiptap/pm@3.10.4))(@tiptap/pm@3.10.4)
       '@tiptap/extension-text-align':
         specifier: ^3.10.4
         version: 3.10.4(@tiptap/core@3.10.4(@tiptap/pm@3.10.4))

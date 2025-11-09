@@ -7,6 +7,7 @@ import { Color } from '@tiptap/extension-color'
 import { FontFamily } from '@tiptap/extension-font-family'
 import TextAlign from '@tiptap/extension-text-align'
 import Underline from '@tiptap/extension-underline'
+import Link from '@tiptap/extension-link'
 import { Extension } from '@tiptap/core'
 import type { ModuleContentElement, JSONContent } from "@/types/resume"
 import { useToolbarManager } from "./rich-text-toolbar-manager"
@@ -80,6 +81,12 @@ export default function RichTextInput({
       FontFamily,
       FontSize,
       Underline,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-blue-600 underline hover:text-blue-800',
+        },
+      }),
       TextAlign.configure({
         types: ['paragraph'],
       }),
