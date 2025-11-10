@@ -137,7 +137,7 @@ export function ExportButton({
       console.error('Failed to open popup window');
       toast({
         title: "导出失败",
-        description: "无法打开PDF预览窗口，请检查浏览器弹窗设置",
+        description: "无法打开 PDF 预览窗口，请检查浏览器弹窗设置",
         variant: "destructive",
       });
       return;

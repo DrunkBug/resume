@@ -36,7 +36,7 @@ html {
   --font-mono: ${GeistMono.variable};
 }
         `}</style>
-        <link rel="stylesheet" href="/styles/print-resume.css" media="print" />
+        {/** 合并打印样式到 styles/print.css，移除单独的 public/styles/print-resume.css 引用 */}
       </head>
       <body className={notoSansSC.className}>
         <ColorPickerProvider>

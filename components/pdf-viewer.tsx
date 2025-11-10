@@ -1,580 +1,184 @@
 "use client";
 
-import React from "react";
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-  PDFViewer as ReactPDFViewer,
-  PDFDownloadLink as ReactPDFDownloadLink,
-  Image,
-  Font,
-  Svg,
-  Path,
-  Link,
-} from "@react-pdf/renderer";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ResumeData } from "@/types/resume";
+import ResumePreview from "./resume-preview";
 
-// Personal info visuals: keep icon, text height, and spacing consistent
-const PI_FONT_SIZE = 10;      // pt
-const PI_LINE_HEIGHT = 12;    // pt – slightly larger than font size for stability
-const PI_ICON_SIZE = 10;      // pt – icon size
-const PI_ICON_GAP = 0;        // pt – minimal space between icon and text
 
-// 注册字体
-Font.register({
-  family: "NotoSansSC",
-  src: "/NotoSansSC-Medium.ttf",
-  fontStyle: "normal",
-  fontWeight: "normal",
-});
+const FORCE_PRINT = process.env.NEXT_PUBLIC_FORCE_PRINT === "true";
+const FORCE_SERVER = process.env.NEXT_PUBLIC_FORCE_SERVER_PDF === "true";
 
-// 注册中文字符断字回调，使每个中文字符可以单独换行
-Font.registerHyphenationCallback((word) => {
-  if (word.length === 1) {
-    return [word];
+async function fetchWithTimeout(input: RequestInfo, init?: RequestInit & { timeout?: number }) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), init?.timeout ?? 3000);
+  try {
+    const res = await fetch(input, { ...init, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(t);
   }
+}
 
-  return Array.from(word)
-    .map((char) => [char, ""])
-    .reduce((arr, current) => {
-      arr.push(...current);
-      return arr;
-    }, []);
-});
+async function checkServerPdfAvailable(): Promise<boolean> {
+  try {
+    const res = await fetchWithTimeout("/api/pdf/health", { method: "GET", timeout: 3000, cache: "no-store" });
+    if (!res.ok) return false;
+    const data = await res.json().catch(() => ({}));
+    return !!data.ok;
+  } catch {
+    return false;
+  }
+}
 
-// 由于我们只有一个字体文件，我们需要将其注册为所有样式
-// 这样可以防止 React PDF 尝试查找不存在的字体变体
-Font.register({
-  family: "NotoSansSC",
-  src: "/NotoSansSC-Medium.ttf",
-  fontStyle: "italic",
-  fontWeight: "normal",
-});
+async function generateServerPdf(resumeData: ResumeData): Promise<Blob> {
+  const res = await fetch("/api/pdf", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ resumeData }),
+  });
+  if (!res.ok) {
+    // Try to surface server-side error details
+    const ct = res.headers.get("content-type") || "";
+    let detail = "";
+    try {
+      if (ct.includes("application/json")) {
+        const j = await res.json();
+        detail = j?.error ? String(j.error) : JSON.stringify(j);
+      } else {
+        detail = await res.text();
+      }
+    } catch {}
+    throw new Error(`Failed to generate PDF (${res.status}). ${detail}`);
+  }
+  return await res.blob();
+}
 
-Font.register({
-  family: "NotoSansSC",
-  src: "/NotoSansSC-Medium.ttf",
-  fontStyle: "normal",
-  fontWeight: "bold",
-});
+export type Mode = "loading" | "server" | "fallback";
 
-Font.register({
-  family: "NotoSansSC",
-  src: "/NotoSansSC-Medium.ttf",
-  fontStyle: "italic",
-  fontWeight: "bold",
-});
+export function PDFViewer({
+  resumeData,
+  onModeChange,
+  renderNotice = "internal",
+}: {
+  resumeData: ResumeData;
+  onModeChange?: (mode: Mode) => void;
+  /**
+   * internal: 在组件内部渲染降级提示与打印按钮
+   * external: 由外部容器负责渲染提示（组件内部不再渲染提示）
+   */
+  renderNotice?: "internal" | "external";
+}) {
+  const [mode, setMode] = useState<Mode>("loading");
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const hasServerPdfRef = useRef(false);
+  const resumeKey = useMemo(() => JSON.stringify(resumeData), [resumeData]);
+  const genIdRef = useRef(0);
 
-// 创建样式
-const styles = StyleSheet.create({
-  page: {
-    padding: 30,
-    fontFamily: "NotoSansSC",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  headerCentered: {
-    flexDirection: "column",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  headerContent: {
-    flex: 1,
-  },
-  headerContentCentered: {
-    width: "100%",
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "left",
-  },
-  titleCentered: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  jobIntention: {
-    fontSize: PI_FONT_SIZE,
-    color: "#666",
-    marginBottom: 8,
-    textAlign: "left",
-  },
-  jobIntentionCentered: {
-    fontSize: PI_FONT_SIZE,
-    color: "#666",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  personalInfo: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  personalInfoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "50%",
-    marginBottom: 5,
-  },
-  personalInfoInline: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    flexWrap: "nowrap",
-    backgroundColor: "#F5F6F8",
-    padding: "8 12",
-    borderRadius: 4,
-  },
-  personalInfoInlineItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexShrink: 0,
-  },
-  personalInfoSeparator: {
-    marginRight: 8,
-    color: "#999",
-  },
-  label: {
-    fontSize: PI_FONT_SIZE,
-    color: "#666",
-    marginRight: 5,
-    lineHeight: PI_LINE_HEIGHT,
-  },
-  value: {
-    fontSize: PI_FONT_SIZE,
-    lineHeight: PI_LINE_HEIGHT,
-  },
-  link: {
-    fontSize: PI_FONT_SIZE,
-    lineHeight: PI_LINE_HEIGHT,
-    color: "#2563eb",
-    textDecoration: "underline",
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginLeft: 15,
-  },
-  avatarCentered: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginTop: 10,
-  },
-  moduleContainer: {
-    marginBottom: 15,
-  },
-  moduleTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    // 下边框相关样式移除
-  },
-  moduleTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-    paddingBottom: 5,
-    marginBottom: 8,
-    width: "100%",
-  },
-  moduleHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 12,
-    fontWeight: "medium",
-  },
-  timeRange: {
-    fontSize: 10,
-    color: "#666",
-    // 避免使用斜体，因为我们的字体可能不支持真正的斜体渲染
-    // fontStyle: "italic",
-  },
-  content: {
-    fontSize: 10,
-    lineHeight: 1.5,
-  },
-  placeholder: {
-    textAlign: "center",
-    marginTop: 50,
-    color: "#666",
-  },
-});
+  useEffect(() => {
+    let mounted = true;
+    let urlToRevoke: string | null = null;
+    const currentId = ++genIdRef.current;
+    const run = async () => {
+      if (FORCE_PRINT) {
+        if (mounted) setMode("fallback");
+        onModeChange?.("fallback");
+        return;
+      }
+      let available = FORCE_SERVER;
+      if (!available) {
+        // 使用 sessionStorage 缓存探测结果，减少健康检查次数
+        const cached = sessionStorage.getItem("serverPdfAvailable");
+        if (cached !== null) {
+          available = cached === "1";
+        } else {
+          available = await checkServerPdfAvailable();
+          sessionStorage.setItem("serverPdfAvailable", available ? "1" : "0");
+        }
+      }
 
-type IconType = {
-  icon?: string;
-  size?: number;
-  style?: React.CSSProperties;
-};
+      if (!available) {
+        if (mounted) setMode("fallback");
+        onModeChange?.("fallback");
+        return;
+      }
 
-// 提取path路径 d 属性 并返回svg
-const renderIcon = ({ icon, size, style }: IconType) => {
-  if (!icon) return null;
-  const match = icon.match(/d="([^"]+)"/);
-  if (match && match[1]) {
+      try {
+        const blob = await generateServerPdf(resumeData);
+        if (!mounted) return;
+        if (genIdRef.current !== currentId) return; // stale
+        const url = URL.createObjectURL(blob);
+        urlToRevoke = url;
+        setPdfUrl(url);
+        setMode("server");
+        onModeChange?.("server");
+        hasServerPdfRef.current = true;
+      } catch (e: any) {
+        console.error(e);
+        if (!mounted) return;
+        if (genIdRef.current !== currentId) return; // stale
+        setError(e?.message || String(e));
+        if (!hasServerPdfRef.current || !pdfUrl) {
+          setMode("fallback");
+          onModeChange?.("fallback");
+        }
+      }
+    };
+    const t = setTimeout(run, 250); // small debounce to avoid thrash
+    return () => {
+      mounted = false;
+      if (urlToRevoke) URL.revokeObjectURL(urlToRevoke);
+      clearTimeout(t);
+    };
+  }, [resumeKey]);
+
+  if (mode === "server") {
     return (
-      <Svg width={size} height={size} viewBox="0 0 24 24" style={style as any}>
-        <Path d={match[1]} fill="black" />
-      </Svg>
+      <object data={pdfUrl || undefined} type="application/pdf" width="100%" height="100%" style={{ border: "none" }}>
+        <div className="p-6 text-center text-muted-foreground">
+          无法嵌入预览，请下载后查看。
+        </div>
+      </object>
     );
   }
-  return null;
-};
 
-const isAsciiOnly = (str?: string) => !!str && /^[\x00-\x7F]+$/.test(str);
+  if (mode === "loading") {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-sm text-muted-foreground">正在生成 PDF 预览…</div>
+      </div>
+    );
+  }
 
-// 渲染个人信息项
-const renderPersonalInfoItem = (item: any, showLabels: boolean, isInline: boolean) => {
+  // 回退到所见即所得的 HTML 预览 + 打印指引
   return (
-    <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
-      {/* 不换行簇：图标 + 标签 保持在同一行 */}
-      <View wrap={false} style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0 }}>
-        <View
-          style={{
-            width: PI_ICON_SIZE,
-            height: PI_LINE_HEIGHT,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginRight: PI_ICON_GAP,
-          }}
-        >
-          {renderIcon({ icon: item.icon, size: PI_ICON_SIZE })}
-        </View>
-        {showLabels ? <Text style={{ ...styles.label, marginRight: 4 }}>{item.label}:</Text> : null}
-      </View>
-
-      {/* 值：占剩余宽度，可换行 */}
-      {item.value.type === 'link' && item.value.content ? (
-        <Link
-          src={item.value.content}
-          style={{
-            ...styles.link,
-            fontFamily: isAsciiOnly(item.value.title || item.value.content) ? 'Helvetica' : 'NotoSansSC',
-            flexGrow: 1,
-            flexShrink: 1,
-          }}
-        >
-          {item.value.title || '点击访问'}
-        </Link>
-      ) : (
-        <Text
-          style={{
-            ...styles.value,
-            fontFamily: isAsciiOnly(item.value.content) ? 'Helvetica' : 'NotoSansSC',
-            flexGrow: 1,
-            flexShrink: 1,
-          }}
-        >
-          {item.value.content || '未填写'}
-        </Text>
-      )}
-    </View>
-  );
-};
-
-// 将富文本JSON内容渲染为带样式的React-PDF组件
-const renderRichText = (content: any): React.ReactNode => {
-  if (!content) return null;
-
-  const renderNode = (node: any, index: number): React.ReactNode => {
-    // 处理文本节点
-    if (node.text !== undefined) {
-      // 收集所有样式
-      const textStyles: any = {
-        fontSize: 10,
-      };
-
-      let linkHref: string | null = null;
-
-      // 处理marks（粗体、斜体、下划线、颜色、链接等）
-      if (node.marks && Array.isArray(node.marks)) {
-        node.marks.forEach((mark: any) => {
-          switch (mark.type) {
-            case 'bold':
-              textStyles.fontWeight = 'bold';
-              break;
-            case 'italic':
-              textStyles.fontStyle = 'italic';
-              break;
-            case 'underline':
-              textStyles.textDecoration = 'underline';
-              break;
-            case 'strike':
-              textStyles.textDecoration = 'line-through';
-              break;
-            case 'link':
-              linkHref = mark.attrs?.href;
-              textStyles.color = '#2563eb';
-              textStyles.textDecoration = 'underline';
-              break;
-            case 'textStyle':
-              // 处理颜色
-              if (mark.attrs?.color) {
-                textStyles.color = mark.attrs.color;
-              }
-              // 处理字号
-              if (mark.attrs?.fontSize) {
-                const fontSize = mark.attrs.fontSize;
-                // 提取数字部分
-                const match = fontSize.match(/(\d+)/);
-                if (match) {
-                  textStyles.fontSize = parseInt(match[1], 10);
-                }
-              }
-              break;
-          }
-        });
-      }
-
-      // 如果是链接，使用 Link 组件
-      if (linkHref) {
-        return (
-          <Link key={index} src={linkHref} style={textStyles}>
-            {node.text}
-          </Link>
-        );
-      }
-
-      return (
-        <Text key={index} style={textStyles}>
-          {node.text}
-        </Text>
-      );
-    }
-
-    // 处理段落节点
-    if (node.type === 'paragraph') {
-      const paragraphStyles: any = {
-        marginBottom: 3,
-      };
-
-      // 处理文本对齐
-      if (node.attrs?.textAlign) {
-        paragraphStyles.textAlign = node.attrs.textAlign;
-      }
-
-      return (
-        <View key={index} style={paragraphStyles}>
-          {node.content && Array.isArray(node.content) ? (
-            <Text style={styles.content}>
-              {node.content.map((child: any, childIndex: number) =>
-                renderNode(child, childIndex)
-              )}
-            </Text>
-          ) : (
-            <Text style={styles.content}> </Text>
-          )}
-        </View>
-      );
-    }
-
-    // 处理文档节点
-    if (node.type === 'doc' && node.content && Array.isArray(node.content)) {
-      return (
-        <View key={index}>
-          {node.content.map((child: any, childIndex: number) =>
-            renderNode(child, childIndex)
-          )}
-        </View>
-      );
-    }
-
-    // 处理其他节点类型
-    if (node.content && Array.isArray(node.content)) {
-      return node.content.map((child: any, childIndex: number) =>
-        renderNode(child, childIndex)
-      );
-    }
-
-    return null;
-  };
-
-  return renderNode(content, 0);
-};
-
-// 简历PDF文档组件
-const ResumePDF = ({ resumeData }: { resumeData: ResumeData }) => {
-  // 向后兼容：支持personalInfoInline和新的layout配置
-  const personalInfoSection = resumeData.personalInfoSection;
-  const isInline = personalInfoSection?.layout?.mode === 'inline' ||
-    (personalInfoSection?.layout?.mode === undefined && (personalInfoSection as any)?.personalInfoInline);
-  const itemsPerRow = personalInfoSection?.layout?.itemsPerRow || 2;
-  const showLabels = personalInfoSection?.showPersonalInfoLabels !== false;
-  const personalInfoItems = personalInfoSection?.personalInfo || [];
-  const centerTitle = resumeData.centerTitle || false;
-
-  // 格式化求职意向显示
-  const formatJobIntention = () => {
-    if (!resumeData.jobIntentionSection?.enabled || !resumeData.jobIntentionSection?.items?.length) {
-      return null;
-    }
-
-    const items = resumeData.jobIntentionSection.items
-      .filter(item => {
-        // 过滤掉空值的项
-        if (item.type === 'salary') {
-          return item.salaryRange?.min !== undefined || item.salaryRange?.max !== undefined;
-        }
-        return item.value && item.value.trim() !== '';
-      })
-      .sort((a, b) => a.order - b.order)
-      .map(item => `${item.label}：${item.value}`)
-      .join(' ｜ ');
-
-    return items || null;
-  };
-
-  const jobIntentionText = formatJobIntention();
-
-  return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        {/* 头部信息 */}
-        <View style={centerTitle ? styles.headerCentered : styles.header}>
-          <View style={centerTitle ? styles.headerContentCentered : styles.headerContent}>
-            <Text style={centerTitle ? styles.titleCentered : styles.title}>
-              {resumeData.title || "简历标题"}
-            </Text>
-
-            {/* 求职意向 */}
-            {jobIntentionText && (
-              <Text style={centerTitle ? styles.jobIntentionCentered : styles.jobIntention}>
-                {jobIntentionText}
-              </Text>
-            )}
-
-            {/* 个人信息 */}
-            {isInline ? (
-              // 单行显示模式 - 使用两端对齐
-              <View style={styles.personalInfoInline}>
-                {personalInfoItems.map((item) => (
-                  <View key={item.id} style={styles.personalInfoInlineItem}>
-                    {renderPersonalInfoItem(item, showLabels, true)}
-                  </View>
-                ))}
-              </View>
+    <div className="w-full h-full pdf-fallback-container">
+      {renderNotice === "internal" && (
+        <div className="no-print p-3 border-b bg-white">
+          <div className="text-sm text-muted-foreground">
+            {error ? (
+              <span>服务器生成失败，已切换为浏览器打印。{error}</span>
             ) : (
-              // 多行显示模式：使用固定等宽列，保证跨行列对齐，避免绝对定位导致的断裂
-              (() => {
-                // 将元素按行分组
-                const rows: typeof personalInfoItems[] = [];
-                for (let i = 0; i < personalInfoItems.length; i += itemsPerRow) {
-                  rows.push(personalInfoItems.slice(i, i + itemsPerRow));
-                }
-
-                const colWidth = `${100 / itemsPerRow}%` as const;
-
-                return (
-                  <View>
-                    {rows.map((rowItems, rowIndex) => (
-                      <View
-                        key={rowIndex}
-                        style={{ flexDirection: 'row', width: '100%', alignItems: 'center' }}
-                      >
-                        {Array.from({ length: itemsPerRow }).map((_, colIndex) => {
-                          const item = rowItems[colIndex];
-                          return (
-                            <View
-                              key={colIndex}
-                              style={{
-                                width: colWidth,
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                flexWrap: 'nowrap',
-                                minHeight: PI_LINE_HEIGHT,
-                              }}
-                            >
-                              {item ? renderPersonalInfoItem(item, showLabels, false) : null}
-                            </View>
-                          );
-                        })}
-                      </View>
-                    ))}
-                  </View>
-                );
-              })()
+              <span>服务器不可用，已切换为浏览器打印。</span>
             )}
-          </View>
-
-          {/* 头像 */}
-          {resumeData.avatar && (
-            <Image src={resumeData.avatar} style={centerTitle ? styles.avatarCentered : styles.avatar} />
-          )}
-        </View>
-
-        {/* 简历模块 */}
-        {resumeData.modules
-          .sort((a, b) => a.order - b.order)
-          .map((module) => (
-            <View key={module.id} style={styles.moduleContainer}>
-              <View style={styles.moduleTitleContainer}>
-                {renderIcon({ icon: module.icon, size: 16 })}
-                <Text style={styles.moduleTitle}>{module.title}</Text>
-              </View>
-
-              <View>
-                {/* 渲染行 */}
-                {module.rows
-                  .sort((a, b) => a.order - b.order)
-                  .map((row) => (
-                    <View
-                      key={row.id}
-                      style={{
-                        flexDirection: "row",
-                        marginBottom: 5,
-                        gap: 10
-                      }}
-                    >
-                      {row.elements.map((element) => (
-                        <View
-                          key={element.id}
-                          style={{
-                            flex: 1,
-                            minWidth: 0
-                          }}
-                        >
-                          {renderRichText(element.content)}
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-              </View>
-            </View>
-          ))}
-
-        {/* 空状态提示 */}
-        {resumeData.modules.length === 0 && (
-          <Text style={styles.placeholder}>暂无简历内容</Text>
-        )}
-      </Page>
-    </Document>
+            <span className="ml-2 text-foreground">请在打印对话框中：关闭“页眉和页脚”，勾选“背景图形”。</span>
+            <button
+              onClick={() => window.print()}
+              className="ml-3 inline-flex items-center px-3 py-1.5 rounded bg-primary text-primary-foreground text-sm"
+            >
+              打印/保存为 PDF
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="pdf-preview-mode">
+        <ResumePreview resumeData={resumeData} />
+      </div>
+    </div>
   );
-};
+}
 
-// PDF预览组件
-export const PDFViewer = ({ resumeData }: { resumeData: ResumeData }) => (
-  <ReactPDFViewer width="100%" height="100%" style={{ border: "none" }}>
-    <ResumePDF resumeData={resumeData} />
-  </ReactPDFViewer>
-);
-
-// PDF下载链接组件
-export const PDFDownloadLink = ({
+export function PDFDownloadLink({
   resumeData,
   fileName = "resume.pdf",
   children,
@@ -582,13 +186,47 @@ export const PDFDownloadLink = ({
   resumeData: ResumeData;
   fileName?: string;
   children: React.ReactNode;
-}) => (
-  <ReactPDFDownloadLink
-    document={<ResumePDF resumeData={resumeData} />}
-    fileName={fileName}
-  >
-    {({ loading }) => (loading ? "正在生成PDF..." : children)}
-  </ReactPDFDownloadLink>
-);
+}) {
+  const [loading, setLoading] = useState(false);
 
-export default ResumePDF;
+  const handleClick = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    try {
+      const available = FORCE_PRINT ? false : await checkServerPdfAvailable();
+      if (!available) {
+        alert("服务器生成不可用，请使用‘打印/保存为 PDF’，并在对话框中关闭页眉页脚、勾选背景图形。");
+        return;
+      }
+      const blob = await generateServerPdf(resumeData);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert("生成 PDF 失败，请稍后再试或使用浏览器打印。");
+    } finally {
+      setLoading(false);
+    }
+  }, [resumeData, fileName, loading]);
+
+  if (React.isValidElement(children)) {
+    return React.cloneElement(children as any, {
+      onClick: handleClick,
+      disabled: loading || (children as any).props?.disabled,
+    });
+  }
+  return (
+    <a href="#" onClick={handleClick}>
+      {loading ? "正在生成 PDF..." : children || "下载 PDF"}
+    </a>
+  );
+}
+
+export default PDFViewer;

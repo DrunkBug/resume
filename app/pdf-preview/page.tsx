@@ -20,6 +20,7 @@ const DynamicPDFDownloadLink = dynamic(
 
 function PDFPreviewContent() {
   const [resumeData, setResumeData] = useState<ResumeData | null>(null)
+  const [fallback, setFallback] = useState(false)
 
   useEffect(() => {
     // 先检查 sessionStorage 是否有数据
@@ -63,24 +64,41 @@ function PDFPreviewContent() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <div className="flex justify-between items-center p-4 border-b">
-        <h1 className="text-xl font-bold">PDF预览</h1>
+      <div className="flex items-center justify-between p-4 border-b no-print">
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-xl font-bold">PDF预览</h1>
+          {fallback && (
+            <div className="flex items-baseline gap-1 text-xs text-muted-foreground">
+              <Icon icon="mdi:alert-circle" className="w-3.5 h-3.5 text-amber-600" />
+              <span>服务器不可用，已切换为浏览器打印。请在打印对话框中关闭“页眉和页脚”，勾选“背景图形”。</span>
+              <Button size="sm" className="ml-2 h-6 px-2 py-1 text-xs" onClick={() => window.print()}>
+                打印/保存为 PDF
+              </Button>
+            </div>
+          )}
+        </div>
         <div className="flex gap-2">
           <Button onClick={() => window.close()} variant="outline" size="sm" className="gap-2">
             <Icon icon="mdi:close" className="w-4 h-4" />
             关闭
           </Button>
-          <DynamicPDFDownloadLink resumeData={resumeData} fileName={fileName}>
-            <Button size="sm" className="gap-2">
-              <Icon icon="mdi:download" className="w-4 h-4" />
-              下载PDF
-            </Button>
-          </DynamicPDFDownloadLink>
+          {!fallback && (
+            <DynamicPDFDownloadLink resumeData={resumeData} fileName={fileName}>
+              <Button size="sm" className="gap-2">
+                <Icon icon="mdi:download" className="w-4 h-4" />
+                下载 PDF
+              </Button>
+            </DynamicPDFDownloadLink>
+          )}
         </div>
       </div>
       <div className="flex-1 overflow-hidden flex">
         <div className="w-full h-full">
-          <DynamicPDFViewer resumeData={resumeData} />
+          <DynamicPDFViewer
+            resumeData={resumeData}
+            renderNotice="external"
+            onModeChange={(m) => setFallback(m === "fallback")}
+          />
         </div>
       </div>
     </div>
