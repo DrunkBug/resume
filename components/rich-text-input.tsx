@@ -9,6 +9,7 @@ import TextAlign from '@tiptap/extension-text-align'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
 import { Extension } from '@tiptap/core'
+import { Plugin } from 'prosemirror-state'
 import type { ModuleContentElement, JSONContent } from "@/types/resume"
 import { useToolbarManager } from "./rich-text-toolbar-manager"
 
@@ -46,6 +47,39 @@ const FontSize = Extension.create({
   },
 })
 
+// Preserve newlines when pasting plain text: split into paragraphs
+const PlainTextPaste = Extension.create({
+  name: 'plainTextPaste',
+  addProseMirrorPlugins() {
+    const editor = this.editor
+    return [
+      new Plugin({
+        props: {
+          handlePaste(view, event) {
+            const e = event as ClipboardEvent
+            const cd = e?.clipboardData
+            if (!cd) return false
+            const html = cd.getData('text/html') || ''
+            const text = cd.getData('text/plain') || ''
+            // If HTML contains semantic blocks, let default handler run
+            if (html && /<(p|br|div|ul|ol|li)\b/i.test(html)) return false
+            if (!text || !/\r?\n/.test(text)) return false
+            e.preventDefault()
+            const lines = text.replace(/\r\n?/g, '\n').split('\n')
+            const content = lines.map((line) => (
+              line
+                ? { type: 'paragraph', content: [{ type: 'text', text: line }] }
+                : { type: 'paragraph' }
+            ))
+            editor.chain().focus().insertContent(content).run()
+            return true
+          },
+        },
+      }),
+    ]
+  },
+})
+
 // Default empty content
 const getDefaultContent = (): JSONContent => ({
   type: 'doc',
@@ -73,13 +107,15 @@ export default function RichTextInput({
         blockquote: false,
         codeBlock: false,
         horizontalRule: false,
-        // 禁用 TrailingNode 以防止列表后自动添加空段落
+        // 禁用 TrailingNode 与 Dropcursor，避免在列表转换后自动追加空段落
+        trailingNode: false,
         dropcursor: false,
       }),
       TextStyle,
       Color,
       FontFamily,
       FontSize,
+      PlainTextPaste,
       Underline,
       Link.configure({
         openOnClick: false,
@@ -103,6 +139,8 @@ export default function RichTextInput({
       onChange({ content: json })
     },
   })
+
+  // 粘贴逻辑已由 PlainTextPaste 扩展处理
 
   // Register editor with toolbar manager
   useEffect(() => {

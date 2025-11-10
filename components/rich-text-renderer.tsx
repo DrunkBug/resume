@@ -70,6 +70,7 @@ export default function RichTextRenderer({
         blockquote: false,
         codeBlock: false,
         horizontalRule: false,
+        trailingNode: false,
       }),
       TextStyle,
       Color,

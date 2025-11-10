@@ -104,11 +104,11 @@ export default function RichTextToolbar({ editor }: RichTextToolbarProps) {
     if (!positions.length) return
     // 逆序处理，避免位置偏移
     positions.sort((a, b) => b - a).forEach((pos) => {
-      editor
-        .chain()
-        .setTextSelection({ from: pos, to: pos })
-        .splitBlock()
-        .run()
+      const c = editor.chain()
+      // 先删除 hardBreak 节点
+      c.setTextSelection({ from: pos, to: pos + 1 }).deleteSelection()
+      // 再在该位置进行分段，避免产生空段落 + 残留 hardBreak
+      c.setTextSelection({ from: pos, to: pos }).splitBlock().run()
     })
     // 大致还原选区范围
     editor.chain().setTextSelection({ from, to: Math.min(editor.state.doc.content.size - 1, to + positions.length) }).run()
@@ -148,10 +148,16 @@ export default function RichTextToolbar({ editor }: RichTextToolbarProps) {
     restoreSavedSelection()
     splitSelectionByHardBreak()
     const chain = editor.chain().focus()
-    chain.unsetAllMarks()
+    // 若处于列表，优先移除列表包装
+    if (editor.isActive('bulletList')) chain.toggleBulletList()
+    if (editor.isActive('orderedList')) chain.toggleOrderedList()
+    // 再尝试提升 listItem，确保完全退出列表
+    // @ts-ignore listItem command is provided by StarterKit
+    chain.liftListItem?.('listItem')
+    // 清除段落级对齐与所有字符级样式
     // @ts-ignore provided by TextAlign extension
     chain.unsetTextAlign?.()
-    chain.clearNodes()
+    chain.unsetAllMarks()
     chain.setParagraph()
     chain.run()
   }
