@@ -38,11 +38,14 @@ export async function POST(req: NextRequest) {
     const url = new URL("/auth", req.url);
     if (from) url.searchParams.set("from", from);
     url.searchParams.set("e", "1");
-    return NextResponse.redirect(url);
+    // Use 303 to convert POST to GET and avoid 405 on pages
+    return NextResponse.redirect(url, 303);
   }
 
   const cookieValue = sha256Node(password);
-  const res = NextResponse.redirect(new URL(from || "/", req.url));
+  // sanitize redirect target to internal path only
+  const safeFrom = typeof from === "string" && from.startsWith("/") && from !== "/auth" ? from : "/";
+  const res = NextResponse.redirect(new URL(safeFrom, req.url), 303);
   res.cookies.set(AUTH_COOKIE, cookieValue, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
