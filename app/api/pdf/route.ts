@@ -1,6 +1,6 @@
 ﻿export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 120;
 
 function getOrigin(req: Request) {
   // Prefer the actual request URL's origin (works in dev and prod)
@@ -101,6 +101,20 @@ export async function POST(req: Request) {
       headless,
     });
     const page = await browser.newPage();
+    // If SITE_PASSWORD is set, set the same auth cookie as middleware expects
+    try {
+      const pwd = (process.env.SITE_PASSWORD ?? "").trim();
+      if (pwd) {
+        const { createHash } = await import("node:crypto");
+        const cookieValue = createHash("sha256").update(pwd).digest("hex");
+        await page.setCookie({
+          name: "site_auth",
+          value: cookieValue,
+          url: origin,
+          path: "/",
+        });
+      }
+    } catch { /* non-fatal */ }
     // 在任何脚本运行之前，将简历数据写入 sessionStorage，避免超长 URL 及 431 错误
     // 同时将远端头像资源内联为 data URL，避免因网络或拦截导致图片缺失
     const preparedData: import("@/types/resume").ResumeData = { ...resumeData } as import("@/types/resume").ResumeData;

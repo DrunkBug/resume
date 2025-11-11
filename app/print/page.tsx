@@ -14,12 +14,15 @@ function decodeDataParam(data?: string): ResumeData | null {
   }
 }
 
-export default function PrintPage({
+export default async function PrintPage({
   searchParams,
 }: {
-  searchParams: { data?: string };
+  searchParams: Promise<{ data?: string }> | { data?: string };
 }) {
-  const resumeData = decodeDataParam(searchParams?.data);
+  const awaited = await Promise.resolve(
+    searchParams as { data?: string } | Promise<{ data?: string }>
+  );
+  const resumeData = decodeDataParam(awaited.data);
 
   // 兼容两种方式：
   // 1) 通过 URL `?data=` 传参（小数据量）

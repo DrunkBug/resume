@@ -1,9 +1,14 @@
 ﻿export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 180;
 
 // 简单内存缓存，保存最近一次生成的 PDF，便于浏览器查看器下载时复用
-const PDF_CACHE: Map<string, { data: Uint8Array; expires: number }> = new Map();
+// 使用 globalThis 持久化，避免 dev/HMR 或多实例下模块重载导致的缓存丢失
+declare global {
+  var __PDF_CACHE__: Map<string, { data: Uint8Array; expires: number }> | undefined;
+}
+const PDF_CACHE: Map<string, { data: Uint8Array; expires: number }> =
+  globalThis.__PDF_CACHE__ ?? (globalThis.__PDF_CACHE__ = new Map());
 
 function setPdfTokenCookie(token: string) {
   // 5 分钟有效
@@ -44,7 +49,10 @@ async function toDataUrlIfRemote(url?: string): Promise<string | undefined> {
   }
 }
 
-export async function POST(req: Request, ctx: { params: { filename: string } }) {
+export async function POST(
+  req: Request,
+  ctx: { params: Promise<{ filename: string }> | { filename: string } }
+) {
   try {
     const [{ default: chromium }, { default: puppeteer }] = await Promise.all([
       import("@sparticuz/chromium"),
@@ -112,6 +120,24 @@ export async function POST(req: Request, ctx: { params: { filename: string } }) 
     });
     const page = await browser.newPage();
 
+    // If SITE_PASSWORD is set, set the same auth cookie as middleware expects
+    try {
+      const pwd = (process.env.SITE_PASSWORD ?? "").trim();
+      if (pwd) {
+        const { createHash } = await import("node:crypto");
+        const cookieValue = createHash("sha256").update(pwd).digest("hex");
+        // Set cookie scoped to current origin so middleware will pass
+        await page.setCookie({
+          name: "site_auth",
+          value: cookieValue,
+          url: origin,
+          path: "/",
+        });
+      }
+    } catch {
+      // Non-fatal: continue without cookie
+    }
+
     // Prepare data: inline avatar if remote
     const preparedData: import("@/types/resume").ResumeData = { ...resumeData } as import("@/types/resume").ResumeData;
     if (preparedData.avatar) {
@@ -171,8 +197,11 @@ export async function POST(req: Request, ctx: { params: { filename: string } }) 
     }
     await browser.close();
 
-    // Content-Disposition with filename from URL param
-    const inputName = ctx?.params?.filename || "resume.pdf";
+    // Content-Disposition with filename from URL param (await params for Next.js dynamic APIs)
+    const awaitedParams = await Promise.resolve(
+      (ctx as { params: { filename: string } | Promise<{ filename: string }> }).params
+    );
+    const inputName = awaitedParams.filename || "resume.pdf";
 
     // 生成并缓存 token，供浏览器下载按钮重复请求（GET）时使用
     const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -202,7 +231,10 @@ export async function POST(req: Request, ctx: { params: { filename: string } }) 
   }
 }
 
-export async function GET(req: Request, ctx: { params: { filename: string } }) {
+export async function GET(
+  req: Request,
+  ctx: { params: Promise<{ filename: string }> | { filename: string } }
+) {
   try {
     // 允许通过 URL 查询参数或 Cookie 携带 token
     const url = new URL(req.url);
@@ -210,7 +242,10 @@ export async function GET(req: Request, ctx: { params: { filename: string } }) {
     const token = tokenFromQuery || getPdfTokenFromRequest(req);
     const cached = token ? PDF_CACHE.get(token) : undefined;
     if (cached && cached.expires > Date.now()) {
-      const inputName = ctx?.params?.filename || "resume.pdf";
+      const awaitedParams = await Promise.resolve(
+        (ctx as { params: { filename: string } | Promise<{ filename: string }> }).params
+      );
+      const inputName = awaitedParams.filename || "resume.pdf";
       const rawNameUnsafe = decodeURIComponent(inputName);
       const rawName = rawNameUnsafe.replace(/[\r\n]/g, "_").replace(/\//g, "_");
       const asciiFallback = rawName.replace(/[^\x20-\x7E]/g, "_");
