@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Ensure auxiliary styles are bundled in prod (must appear before any non-@import rules) */
+@import url("../styles/print.css");
+@import url("../styles/tiptap.css");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -226,8 +229,4 @@
   }
 }
 
-/* 导入打印样式 */
-@import url("../styles/print.css");
-
-/* 导入 Tiptap 样式 */
-@import url("../styles/tiptap.css");
+/* moved the two @import above to satisfy CSS spec ordering */
