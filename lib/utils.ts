@@ -250,7 +250,7 @@ export function createDefaultResumeData(): ResumeData {
         ]
       }
     ],
-    avatar: "",
+    avatar: "/default-avatar.jpg",
     createdAt: now,
     updatedAt: now
   }

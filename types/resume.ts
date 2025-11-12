@@ -156,6 +156,23 @@ export interface ResumeData {
 }
 
 /**
+ * 本地存储的简历条目结构
+ */
+export interface StoredResume {
+  /** 唯一标识（使用 uuid/crypto.randomUUID 生成） */
+  id: string
+  /** 创建时间 */
+  createdAt: string
+  /** 最近更新时间 */
+  updatedAt: string
+  /** 实际的简历数据 */
+  resumeData: ResumeData
+}
+
+/** 本地存储使用的 Key */
+export const LOCAL_STORAGE_KEY = "resume.entries"
+
+/**
  * 文件保存/导入的数据结构
  */
 export interface ResumeFile {

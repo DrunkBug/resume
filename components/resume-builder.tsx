@@ -8,10 +8,10 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/hooks/use-toast"
 import { Icon } from "@iconify/react"
 import type { ResumeData, EditorState } from "@/types/resume"
-import { importFromMagicyanFile, createDefaultResumeData } from "@/lib/resume-utils"
+import { createDefaultResumeData } from "@/lib/utils"
+import { loadDefaultTemplate } from "@/lib/storage"
 import ResumePreview from "./resume-preview"
 import PersonalInfoEditor from "./personal-info-editor"
 import JobIntentionEditor from "./job-intention-editor"
@@ -63,39 +63,28 @@ ViewModeSelector.displayName = "ViewModeSelector"
 /**
  * 简历构建器主组件
  */
-export default function ResumeBuilder() {
+export default function ResumeBuilder({ initialData, onChange, onSave, onBack }: { initialData?: ResumeData; onChange?: (data: ResumeData) => void; onSave?: (data: ResumeData) => void; onBack?: () => void }) {
   const [editorState, setEditorState] = useState<EditorState>({
-    resumeData: createDefaultResumeData(),
+    resumeData: initialData ?? createDefaultResumeData(),
     isEditing: true,
     showPreview: true,
   })
 
   const [viewMode, setViewMode] = useState<ViewMode>("both")
 
-  const { toast } = useToast()
-
   useEffect(() => {
+    if (initialData) return
     const loadDemoData = async () => {
-      try {
-        const response = await fetch("/template.json")
-        if (!response.ok) {
-          console.warn("模板文件不存在，使用默认数据")
-          return
-        }
-        const content = await response.text()
-        const demoData = importFromMagicyanFile(content)
-
-        setEditorState((prev) => ({
-          ...prev,
-          resumeData: demoData,
-        }))
-      } catch (error) {
-        console.warn("加载模板文件失败，使用默认数据:", error)
-      }
+      const demoData = await loadDefaultTemplate()
+      if (!demoData) return
+      setEditorState((prev) => ({
+        ...prev,
+        resumeData: demoData,
+      }))
     }
 
     loadDemoData()
-  }, [toast])
+  }, [initialData])
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode)
@@ -112,68 +101,14 @@ export default function ResumeBuilder() {
     }))
   }, [])
 
+  // 将变更在提交阶段通知父组件，避免在渲染中更新父组件
+  useEffect(() => {
+    onChange?.(editorState.resumeData)
+  }, [editorState.resumeData, onChange])
 
 
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
 
-    if (!file.name.endsWith(".json")) {
-      toast({
-        title: "文件格式错误",
-        description: "请选择 .json 格式的文件",
-        variant: "destructive",
-      })
-      event.target.value = ""
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "文件过大",
-        description: "文件大小不能超过 5MB",
-        variant: "destructive",
-      })
-      event.target.value = ""
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string
-        const importedData = importFromMagicyanFile(content)
-
-        setEditorState((prev) => ({
-          ...prev,
-          resumeData: importedData,
-        }))
-
-        toast({
-          title: "导入成功",
-          description: `已成功导入简历：${importedData.title}`,
-        })
-      } catch (error) {
-        console.error("导入文件失败:", error)
-        toast({
-          title: "导入失败",
-          description: error instanceof Error ? error.message : "文件解析失败，请检查文件格式",
-          variant: "destructive",
-        })
-      }
-    }
-
-    reader.onerror = () => {
-      toast({
-        title: "读取失败",
-        description: "无法读取文件，请重试",
-      })
-    }
-
-    reader.readAsText(file)
-
-    event.target.value = ""
-  }
+  // 导入功能已移至用户中心
 
   // PDF 导出功能现在由 PDFExportButton 组件处理
 
@@ -184,7 +119,7 @@ export default function ResumeBuilder() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Icon icon="mdi:file-document-edit" className="w-6 h-6 text-primary" />
-            <h1 className="text-lg font-semibold">简历生成器</h1>
+            <h1 className="text-lg font-semibold">简历编辑器</h1>
           </div>
           <Badge variant="secondary" className="text-xs">
             {editorState.resumeData.title}
@@ -192,23 +127,36 @@ export default function ResumeBuilder() {
         </div>
 
         <div className="flex items-center gap-2">
-          <ViewModeSelector viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+          {/* 返回置于视图模式切换左侧 */}
+          {onBack ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onBack?.()}
+              className="gap-2 bg-transparent"
+            >
+              <Icon icon="mdi:arrow-left" className="w-4 h-4" />
+              返回
+            </Button>
+          ) : null}
 
           <Separator orientation="vertical" className="h-6" />
 
-          <input type="file" accept=".json" onChange={handleImport} className="hidden" id="import-file" />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => document.getElementById("import-file")?.click()}
-            className="gap-2 bg-transparent"
-          >
-            <Icon icon="mdi:import" className="w-4 h-4" />
-            导入
-          </Button>
+          <ViewModeSelector viewMode={viewMode} onViewModeChange={handleViewModeChange} />
 
+          {/* 保存 */}
+          {onSave ? (
+            <Button
+              size="sm"
+              onClick={() => onSave?.(editorState.resumeData)}
+              className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Icon icon="mdi:content-save" className="w-4 h-4" />
+              保存
+            </Button>
+          ) : null}
 
-
+          {/* 导出 */}
           <ExportButton
             resumeData={editorState.resumeData}
             size="sm"

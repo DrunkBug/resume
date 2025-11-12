@@ -31,7 +31,7 @@ import { Icon } from "@iconify/react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import type { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import type { JobIntentionItem, JobIntentionSection } from "@/types/resume";
-import { createNewJobIntentionItem } from "@/lib/resume-utils";
+import { createNewJobIntentionItem } from "@/lib/utils";
 
 interface JobIntentionEditorProps {
   jobIntentionSection?: JobIntentionSection;

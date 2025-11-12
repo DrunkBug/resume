@@ -17,7 +17,7 @@ const notoSansSC = localFont({
 export const metadata: Metadata = {
   title: "简历生成器",
   description: "在线简历编辑与生成工具",
-  generator: "magicyan418",
+  generator: "wzdnzd",
 };
 
 export default function RootLayout({

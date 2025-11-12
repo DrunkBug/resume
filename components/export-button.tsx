@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@iconify/react";
 import type { ResumeData } from "@/types/resume";
-import { generatePdfFilename, exportToMagicyanFile, downloadFile } from "@/lib/resume-utils";
+import { generatePdfFilename, exportToMagicyanFile, downloadFile } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,

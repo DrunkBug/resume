@@ -33,7 +33,7 @@ import { Icon } from "@iconify/react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import type { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import type { PersonalInfoItem, PersonalInfoSection, PersonalInfoLayout } from "@/types/resume";
-import { createNewPersonalInfoItem } from "@/lib/resume-utils";
+import { createNewPersonalInfoItem } from "@/lib/utils";
 import IconPicker from "./icon-picker";
 
 interface PersonalInfoEditorProps {

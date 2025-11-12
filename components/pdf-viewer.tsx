@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ResumeData } from "@/types/resume";
-import { generatePdfFilename } from "@/lib/resume-utils";
+import { generatePdfFilename } from "@/lib/utils";
 import ResumePreview from "./resume-preview";
 
 

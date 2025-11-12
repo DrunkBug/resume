@@ -188,7 +188,7 @@ export async function POST(req: Request) {
     await browser.close();
 
     // Generate filename and provide ASCII fallback
-    const { generatePdfFilename } = await import("@/lib/resume-utils");
+    const { generatePdfFilename } = await import("@/lib/utils");
     const rawName = generatePdfFilename(String(resumeData?.title || "resume"));
     const asciiFallback = rawName.replace(/[^\x20-\x7E]/g, "_");
     const utf8Star = `UTF-8''${encodeURIComponent(rawName)}`;
