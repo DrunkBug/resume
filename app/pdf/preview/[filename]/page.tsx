@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, Suspense } from "react"
+import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 import type { ResumeData } from "@/types/resume"
 import { Button } from "@/components/ui/button"
@@ -71,13 +71,8 @@ function PDFPreviewContent() {
     return () => window.removeEventListener('keydown', onKey);
   }, [fallback]);
 
-  if (!resumeData) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-lg mb-4">正在加载简历数据...</p>
-      </div>
-    )
-  }
+  // 无显式加载页：在拿到数据前不渲染内容，避免出现中间态
+  if (!resumeData) return null
 
   return (
     <div className="pdf-preview-page-root flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible">
@@ -110,14 +105,7 @@ function PDFPreviewContent() {
 }
 
 export default function PDFPreviewPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-lg mb-4">加载中...</p>
-      </div>
-    }>
-      <PDFPreviewContent />
-    </Suspense>
-  )
+  // 直接渲染内容，不使用 Suspense 回退以避免“加载中...”中间态
+  return <PDFPreviewContent />
 }
 
