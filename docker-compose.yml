@@ -1,0 +1,14 @@
+services:
+  resume:
+    build: .
+    ports:
+      - "127.0.0.1:3001:3000"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      # 可选：设置访问密码（推荐生产环境）
+      # PDF 相关（如果需要强制服务端生成）
+      # - NEXT_PUBLIC_FORCE_SERVER_PDF=true
+    # mem_limit: 1g   # PDF 生成内存不够时打开
