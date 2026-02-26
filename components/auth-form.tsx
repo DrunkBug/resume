@@ -33,7 +33,7 @@ export default function AuthForm({
           </div>
         </div>
 
-        <form method="post" action="/api/auth" className="px-6 pb-6 pt-2">
+        <form method="post" action={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/auth`} className="px-6 pb-6 pt-2">
           {hasError ? (
             <div className="mb-3 text-sm rounded-md border border-destructive/40 bg-destructive/5 text-destructive px-3 py-2">
               密码错误，请重试。

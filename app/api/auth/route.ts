@@ -7,12 +7,26 @@ function sha256Node(input: string): string {
   return createHash("sha256").update(input).digest("hex");
 }
 
+/** 从请求头中构建外部可访问的 base URL（兼容 Nginx 反代场景） */
+function getExternalBase(req: NextRequest): string {
+  const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "");
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const forwardedProto = req.headers.get("x-forwarded-proto") ?? "https";
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}${basePath}`;
+  }
+  // fallback：直接用 req.url 的 origin（本地开发场景）
+  const origin = new URL(req.url).origin;
+  return `${origin}${basePath}`;
+}
+
 export async function POST(req: NextRequest) {
   const password = (process.env.SITE_PASSWORD ?? "").trim();
 
   // If password not configured, skip and go home
   if (!password) {
-    return NextResponse.redirect(new URL("/", req.url));
+    const base = getExternalBase(req);
+    return NextResponse.redirect(new URL("/", base));
   }
 
   const contentType = req.headers.get("content-type") || "";
@@ -35,7 +49,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (inputPwd !== password) {
-    const url = new URL("/auth", req.url);
+    const base = getExternalBase(req);
+    const url = new URL("/auth", base);
     if (from) url.searchParams.set("from", from);
     url.searchParams.set("e", "1");
     // Use 303 to convert POST to GET and avoid 405 on pages
@@ -45,7 +60,8 @@ export async function POST(req: NextRequest) {
   const cookieValue = sha256Node(password);
   // sanitize redirect target to internal path only
   const safeFrom = typeof from === "string" && from.startsWith("/") && from !== "/auth" ? from : "/";
-  const res = NextResponse.redirect(new URL(safeFrom, req.url), 303);
+  const base = getExternalBase(req);
+  const res = NextResponse.redirect(new URL(safeFrom, base), 303);
   res.cookies.set(AUTH_COOKIE, cookieValue, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
